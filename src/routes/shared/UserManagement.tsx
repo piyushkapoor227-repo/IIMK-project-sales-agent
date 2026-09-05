@@ -1,15 +1,20 @@
 // Invite users + team roster. Shared by admins (/admin/users) and managers
 // (/manager/users). Admins can invite any role; managers can invite field reps
 // (who are then attached to that manager). Author: Piyush Kapoor.
-import { useState, type FormEvent } from 'react'
+import { useMemo, useState, type FormEvent, type ReactNode } from 'react'
 import { AppShell } from '../../components/AppShell'
 import { FormField } from '../../components/FormField'
 import { Button } from '../../components/Button'
-import { Card } from '../../components/primitives'
+import { Badge, Card, SectionTitle } from '../../components/primitives'
 import { useAuth } from '../../lib/auth/AuthContext'
 import { useOrgMembers } from '../../lib/queries/useOrgMembers'
 import { useInviteUser, usePendingInvites } from '../../lib/queries/useInvites'
-import type { UserRole } from '../../types/database.types'
+import { shortDate, timeAgo } from '../../lib/time'
+import type { Profile, UserRole } from '../../types/database.types'
+import { MemberProfileModal } from './users/MemberProfileModal'
+import { PendingInvitesList } from './users/PendingInvitesList'
+
+const roleTone = { admin: 'red', manager: 'blue', rep: 'slate' } as const
 
 export function UserManagement({ nav }: { nav: { to: string; label: string }[] }) {
   const { profile } = useAuth()
@@ -20,9 +25,51 @@ export function UserManagement({ nav }: { nav: { to: string; label: string }[] }
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
 
+  const [search, setSearch] = useState('')
+  const [roleFilter, setRoleFilter] = useState<'all' | UserRole>('all')
+  const [zoneFilter, setZoneFilter] = useState('all')
+  const [managerFilter, setManagerFilter] = useState('all')
+  const [selected, setSelected] = useState<Profile | null>(null)
+
   const { data: members } = useOrgMembers()
   const { data: invites } = usePendingInvites()
   const inviteMutation = useInviteUser()
+
+  const managers = useMemo(
+    () => (members ?? []).filter((m) => m.role === 'manager'),
+    [members],
+  )
+  const zones = useMemo(() => {
+    const set = new Set<string>()
+    for (const m of members ?? []) if (m.zone) set.add(m.zone)
+    return [...set].sort()
+  }, [members])
+  const managerName = (id: string | null) =>
+    (members ?? []).find((m) => m.id === id)?.full_name ?? null
+
+  const filteredMembers = useMemo(() => {
+    const q = search.trim().toLowerCase()
+    return (members ?? []).filter((m) => {
+      if (roleFilter !== 'all' && m.role !== roleFilter) return false
+      if (zoneFilter === 'unzoned' ? m.zone : zoneFilter !== 'all' && m.zone !== zoneFilter) return false
+      if (managerFilter === 'unassigned' ? m.manager_id : managerFilter !== 'all' && m.manager_id !== managerFilter)
+        return false
+      if (!q) return true
+      return (
+        (m.full_name ?? '').toLowerCase().includes(q) ||
+        (m.employee_code ?? '').toLowerCase().includes(q)
+      )
+    })
+  }, [members, search, roleFilter, zoneFilter, managerFilter])
+
+  const filteredInvites = useMemo(() => {
+    return (invites ?? []).filter((inv) => {
+      if (roleFilter !== 'all' && inv.role !== roleFilter) return false
+      if (zoneFilter !== 'all' && zoneFilter !== 'unzoned' && inv.zone !== zoneFilter) return false
+      const q = search.trim().toLowerCase()
+      return !q || inv.email.toLowerCase().includes(q)
+    })
+  }, [invites, roleFilter, zoneFilter, search])
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
@@ -36,6 +83,8 @@ export function UserManagement({ nav }: { nav: { to: string; label: string }[] }
       setError(err instanceof Error ? err.message : 'Failed to send invite.')
     }
   }
+
+  const shown = filteredMembers.slice(0, 100)
 
   return (
     <AppShell nav={nav}>
@@ -90,29 +139,130 @@ export function UserManagement({ nav }: { nav: { to: string; label: string }[] }
         {success && <p className="mt-3 text-sm text-emerald-600 dark:text-emerald-400">{success}</p>}
       </Card>
 
-      <h3 className="mb-2 text-sm font-semibold text-slate-700 dark:text-slate-200">Pending invites</h3>
-      <ul className="mb-8 divide-y divide-slate-200 rounded-lg border border-slate-200 dark:divide-slate-800 dark:border-slate-800">
-        {invites?.length ? (
-          invites.map((invite) => (
-            <li key={invite.id} className="flex justify-between px-4 py-2 text-sm">
-              <span className="text-slate-800 dark:text-slate-200">{invite.email}</span>
-              <span className="text-slate-400">{invite.role}</span>
-            </li>
-          ))
-        ) : (
-          <li className="px-4 py-3 text-sm text-slate-400">No pending invites.</li>
-        )}
-      </ul>
+      {/* filters */}
+      <div className="mb-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+        <input
+          placeholder="Search name, code or email…"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="rounded-lg border border-slate-300 px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-800 dark:text-white"
+        />
+        <Select value={roleFilter} onChange={(v) => setRoleFilter(v as 'all' | UserRole)}>
+          <option value="all">All roles</option>
+          <option value="admin">Admin</option>
+          <option value="manager">Manager</option>
+          <option value="rep">Field rep</option>
+        </Select>
+        <Select value={zoneFilter} onChange={setZoneFilter}>
+          <option value="all">All zones</option>
+          {zones.map((z) => (
+            <option key={z} value={z}>
+              {z}
+            </option>
+          ))}
+          <option value="unzoned">Unzoned</option>
+        </Select>
+        <Select value={managerFilter} onChange={setManagerFilter}>
+          <option value="all">All managers</option>
+          {managers.map((m) => (
+            <option key={m.id} value={m.id}>
+              {m.full_name}
+            </option>
+          ))}
+          <option value="unassigned">Unassigned</option>
+        </Select>
+      </div>
 
-      <h3 className="mb-2 text-sm font-semibold text-slate-700 dark:text-slate-200">Team members</h3>
-      <ul className="divide-y divide-slate-200 rounded-lg border border-slate-200 dark:divide-slate-800 dark:border-slate-800">
-        {members?.map((member) => (
-          <li key={member.id} className="flex justify-between px-4 py-2 text-sm">
-            <span className="text-slate-800 dark:text-slate-200">{member.full_name || member.id}</span>
-            <span className="text-slate-400">{member.role}</span>
-          </li>
-        ))}
-      </ul>
+      <SectionTitle>
+        Team members
+        <span className="ml-2 text-sm font-normal text-slate-400">
+          {filteredMembers.length} of {members?.length ?? 0}
+        </span>
+      </SectionTitle>
+
+      <div className="mb-8 overflow-x-auto rounded-lg border border-slate-200 dark:border-slate-800">
+        <table className="w-full min-w-[640px] text-left text-sm">
+          <thead>
+            <tr className="border-b border-slate-200 text-[11px] uppercase tracking-wide text-slate-400 dark:border-slate-800">
+              <th className="px-3 py-2 font-medium">Name</th>
+              <th className="px-3 py-2 font-medium">Role</th>
+              <th className="px-3 py-2 font-medium">Zone</th>
+              <th className="px-3 py-2 font-medium">Reports to</th>
+              <th className="px-3 py-2 font-medium">Added</th>
+              <th className="px-3 py-2 font-medium">Last active</th>
+            </tr>
+          </thead>
+          <tbody>
+            {shown.map((m) => (
+              <tr
+                key={m.id}
+                onClick={() => setSelected(m)}
+                className="cursor-pointer border-b border-slate-100 last:border-0 hover:bg-slate-50 dark:border-slate-800/60 dark:hover:bg-slate-800/50"
+              >
+                <td className="px-3 py-2">
+                  <span className="font-medium text-slate-800 dark:text-slate-200">
+                    {m.full_name || 'Unnamed'}
+                  </span>
+                  <span className="ml-2 text-xs text-slate-400">{m.employee_code}</span>
+                </td>
+                <td className="px-3 py-2">
+                  <Badge tone={roleTone[m.role]}>{m.role}</Badge>
+                </td>
+                <td className="px-3 py-2 text-slate-500">{m.zone || '—'}</td>
+                <td className="px-3 py-2 text-slate-500">{managerName(m.manager_id) || '—'}</td>
+                <td className="px-3 py-2 text-slate-500">{shortDate(m.created_at)}</td>
+                <td className="px-3 py-2 text-slate-500">{timeAgo(m.last_seen_at)}</td>
+              </tr>
+            ))}
+            {shown.length === 0 && (
+              <tr>
+                <td colSpan={6} className="px-3 py-6 text-center text-slate-400">
+                  No members match these filters.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+      {filteredMembers.length > shown.length && (
+        <p className="-mt-6 mb-8 text-xs text-slate-400">
+          Showing the first {shown.length}. Narrow the filters to see the rest.
+        </p>
+      )}
+
+      <SectionTitle>
+        Pending invites
+        <span className="ml-2 text-sm font-normal text-slate-400">{filteredInvites.length}</span>
+      </SectionTitle>
+      <PendingInvitesList invites={filteredInvites} />
+
+      {selected && (
+        <MemberProfileModal
+          member={selected}
+          manager={(members ?? []).find((m) => m.id === selected.manager_id) ?? null}
+          onClose={() => setSelected(null)}
+        />
+      )}
     </AppShell>
+  )
+}
+
+function Select({
+  value,
+  onChange,
+  children,
+}: {
+  value: string
+  onChange: (v: string) => void
+  children: ReactNode
+}) {
+  return (
+    <select
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      className="rounded-lg border border-slate-300 px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-800 dark:text-white"
+    >
+      {children}
+    </select>
   )
 }

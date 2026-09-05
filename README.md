@@ -22,11 +22,19 @@ echo "VITE_DEMO_MODE=true" > .env.local
 npm run dev
 ```
 
-Open http://localhost:5173 and sign in with **admin / admin** (also **manager / manager**
-and **rep / rep**). Everything runs against an in-browser mock with seeded data —
-outlets, visits, stock, complaints, canned AI output. Data is stored in
-`localStorage` for that browser only; the amber bar has a "Reset demo data" button.
-Turn the demo off by removing `VITE_DEMO_MODE` (or setting it to `false`).
+Open http://localhost:5173 and sign in:
+
+| Login | Role |
+| --- | --- |
+| `admin` / `admin` | Org admin |
+| `national` / `national` (or `manager` / `manager`) | National sales manager |
+| `south` / `south`, `east`, `west`, `north` | Zonal managers |
+| `rep` / `rep` | A field rep (South zone) |
+
+Everything runs against an in-browser mock seeded with ~1 admin, 5 managers, 100
+reps across 4 zones, ~140 visits, stock, complaints, 14 pending invites and canned
+AI output. Data is stored in `localStorage` for that browser only; the amber bar
+has a "Reset demo data" button. Turn the demo off by removing `VITE_DEMO_MODE`.
 
 ## 1. Local frontend setup (real backend)
 

@@ -3,7 +3,14 @@ import { NavLink } from 'react-router-dom'
 import { useAuth } from '../lib/auth/AuthContext'
 import { DEMO, resetDemoStore } from '../lib/demo/store'
 
-export function AppShell({ children, nav }: { children: ReactNode; nav: { to: string; label: string }[] }) {
+export interface NavItem {
+  to: string
+  label: string
+  /** When set, the tab shows a red dot and this text on hover. */
+  note?: string
+}
+
+export function AppShell({ children, nav }: { children: ReactNode; nav: NavItem[] }) {
   const { organization, profile, signOut } = useAuth()
 
   return (
@@ -48,8 +55,9 @@ export function AppShell({ children, nav }: { children: ReactNode; nav: { to: st
           <NavLink
             key={item.to}
             to={item.to}
+            title={item.note}
             className={({ isActive }) =>
-              `whitespace-nowrap border-b-2 px-3 py-2 text-sm font-medium ${
+              `group relative whitespace-nowrap border-b-2 px-3 py-2 text-sm font-medium ${
                 isActive
                   ? 'border-slate-900 text-slate-900 dark:border-white dark:text-white'
                   : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
@@ -57,6 +65,20 @@ export function AppShell({ children, nav }: { children: ReactNode; nav: { to: st
             }
           >
             {item.label}
+            {item.note && (
+              <>
+                <span
+                  className="absolute right-1 top-1.5 h-1.5 w-1.5 rounded-full bg-red-500"
+                  aria-hidden
+                />
+                <span
+                  role="tooltip"
+                  className="pointer-events-none absolute left-1/2 top-full z-40 mt-1 hidden -translate-x-1/2 whitespace-nowrap rounded-md bg-slate-900 px-2 py-1 text-xs font-normal text-white shadow-lg group-hover:block dark:bg-slate-100 dark:text-slate-900"
+                >
+                  {item.note}
+                </span>
+              </>
+            )}
           </NavLink>
         ))}
       </nav>

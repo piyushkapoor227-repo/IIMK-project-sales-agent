@@ -20,6 +20,8 @@ export interface Profile {
   full_name: string | null
   role: UserRole
   manager_id: string | null
+  zone: string | null
+  last_seen_at: string | null
   onboarding_status: OnboardingStatus
   deactivated_at: string | null
   created_at: string
@@ -33,6 +35,7 @@ export interface Invite {
   invited_by: string
   status: InviteStatus
   expires_at: string
+  last_sent_at: string
   accepted_at: string | null
   accepted_user_id: string | null
   created_at: string

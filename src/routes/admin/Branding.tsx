@@ -3,6 +3,8 @@ import { AppShell } from '../../components/AppShell'
 import { Button } from '../../components/Button'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../lib/auth/AuthContext'
+import { DEMO } from '../../lib/demo/store'
+import { fileToDataURL } from '../../lib/storage'
 import { adminNav } from './nav'
 
 export function Branding() {
@@ -18,16 +20,23 @@ export function Branding() {
     setUploading(true)
     setError(null)
     try {
-      const ext = file.name.split('.').pop()
-      const path = `${organization.id}/logo.${ext}`
+      let logoUrl: string
 
-      const { error: uploadError } = await supabase.storage
-        .from('org-logos')
-        .upload(path, file, { upsert: true, cacheControl: '3600' })
-      if (uploadError) throw uploadError
+      if (DEMO) {
+        // No storage backend in demo — embed the image directly.
+        logoUrl = await fileToDataURL(file)
+      } else {
+        const ext = file.name.split('.').pop()
+        const path = `${organization.id}/logo.${ext}`
 
-      const { data: publicUrlData } = supabase.storage.from('org-logos').getPublicUrl(path)
-      const logoUrl = `${publicUrlData.publicUrl}?t=${Date.now()}`
+        const { error: uploadError } = await supabase.storage
+          .from('org-logos')
+          .upload(path, file, { upsert: true, cacheControl: '3600' })
+        if (uploadError) throw uploadError
+
+        const { data: publicUrlData } = supabase.storage.from('org-logos').getPublicUrl(path)
+        logoUrl = `${publicUrlData.publicUrl}?t=${Date.now()}`
+      }
 
       const { error: updateError } = await supabase
         .from('organizations')

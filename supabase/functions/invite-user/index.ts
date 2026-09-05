@@ -21,7 +21,7 @@ Deno.serve(async (req) => {
       return jsonResponse({ error: 'Only admins and managers can invite users.' }, 403)
     }
 
-    const { email, role, full_name } = await req.json()
+    const { email, role, full_name, resend } = await req.json()
     if (!email || !role) {
       return jsonResponse({ error: 'email and role are required.' }, 400)
     }
@@ -39,17 +39,44 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
     )
 
-    const { data: invite, error: inviteInsertError } = await admin
-      .from('invites')
-      .insert({ org_id: callerOrgId, email, role, invited_by: claims.sub })
-      .select('id')
-      .single()
+    // A manager's invitee inherits the manager's zone.
+    let zone: string | null = null
+    if (callerRole === 'manager') {
+      const { data: me } = await admin
+        .from('profiles')
+        .select('zone')
+        .eq('id', claims.sub)
+        .maybeSingle()
+      zone = me?.zone ?? null
+    }
 
-    if (inviteInsertError) {
-      if (inviteInsertError.code === '23505') {
+    // Find (or create) the pending invite row.
+    const { data: existing } = await admin
+      .from('invites')
+      .select('id')
+      .eq('org_id', callerOrgId)
+      .eq('email', email)
+      .eq('status', 'pending')
+      .maybeSingle()
+
+    let inviteId: string
+    if (existing) {
+      if (!resend) {
         return jsonResponse({ error: 'There is already a pending invite for this email.' }, 409)
       }
-      throw inviteInsertError
+      inviteId = existing.id
+      await admin
+        .from('invites')
+        .update({ last_sent_at: new Date().toISOString(), expires_at: new Date(Date.now() + 30 * 864e5).toISOString() })
+        .eq('id', inviteId)
+    } else {
+      const { data: invite, error: inviteInsertError } = await admin
+        .from('invites')
+        .insert({ org_id: callerOrgId, email, role, zone, invited_by: claims.sub })
+        .select('id')
+        .single()
+      if (inviteInsertError) throw inviteInsertError
+      inviteId = invite.id
     }
 
     const siteUrl = Deno.env.get('SITE_URL') ?? 'http://127.0.0.1:5173'
@@ -57,22 +84,25 @@ Deno.serve(async (req) => {
       data: {
         org_id: callerOrgId,
         role,
-        invite_id: invite.id,
+        invite_id: inviteId,
         full_name: full_name ?? '',
         manager_id: managerId,
+        zone,
       },
       redirectTo: `${siteUrl}/accept-invite`,
     })
 
     if (inviteSendError) {
-      await admin.from('invites').update({ status: 'revoked' }).eq('id', invite.id)
+      if (!existing) {
+        await admin.from('invites').update({ status: 'revoked' }).eq('id', inviteId)
+      }
       if (inviteSendError.message?.toLowerCase().includes('already registered')) {
         return jsonResponse({ error: 'This email is already registered.' }, 409)
       }
       throw inviteSendError
     }
 
-    return jsonResponse({ success: true, invite_id: invite.id })
+    return jsonResponse({ success: true, invite_id: inviteId, resent: !!existing })
   } catch (err) {
     console.error(err)
     return jsonResponse({ error: 'Failed to send invite.' }, 500)

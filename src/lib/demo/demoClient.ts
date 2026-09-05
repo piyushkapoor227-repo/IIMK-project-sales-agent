@@ -22,6 +22,8 @@ const EMBED_LOCAL_KEY: Record<string, string> = {
   rep: 'rep_id',
   assignee: 'assigned_to',
   visit: 'visit_id',
+  invitedBy: 'invited_by',
+  manager: 'manager_id',
 }
 
 function splitTopLevel(cols: string): string[] {
@@ -289,21 +291,23 @@ const PLACEHOLDER_IMG =
     `<svg xmlns="http://www.w3.org/2000/svg" width="480" height="320"><rect width="100%" height="100%" fill="#1e293b"/><g fill="#475569"><rect x="24" y="40" width="120" height="240"/><rect x="168" y="40" width="120" height="240"/><rect x="312" y="40" width="120" height="240"/></g><text x="50%" y="305" fill="#94a3b8" font-family="sans-serif" font-size="14" text-anchor="middle">demo shelf photo</text></svg>`,
   )
 
+const cleanKey = (path: string) => path.split('?')[0]
+
 function storageFrom() {
   return {
     async upload(path: string, file: File) {
       try {
-        objectUrls.set(path, URL.createObjectURL(file))
+        objectUrls.set(cleanKey(path), URL.createObjectURL(file))
       } catch {
-        objectUrls.set(path, PLACEHOLDER_IMG)
+        objectUrls.set(cleanKey(path), PLACEHOLDER_IMG)
       }
       return { data: { path }, error: null }
     },
     getPublicUrl(path: string) {
-      return { data: { publicUrl: objectUrls.get(path) ?? PLACEHOLDER_IMG } }
+      return { data: { publicUrl: objectUrls.get(cleanKey(path)) ?? PLACEHOLDER_IMG } }
     },
     async createSignedUrl(path: string) {
-      return { data: { signedUrl: objectUrls.get(path) ?? PLACEHOLDER_IMG }, error: null }
+      return { data: { signedUrl: objectUrls.get(cleanKey(path)) ?? PLACEHOLDER_IMG }, error: null }
     },
   }
 }

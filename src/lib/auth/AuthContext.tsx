@@ -28,6 +28,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .maybeSingle()
     setProfile(profileData as Profile | null)
 
+    // Opportunistically record activity (at most hourly) for the user directory.
+    const lastSeen = (profileData as Profile | null)?.last_seen_at
+    if (!lastSeen || Date.now() - new Date(lastSeen).getTime() > 3_600_000) {
+      const noop = () => {}
+      supabase
+        .from('profiles')
+        .update({ last_seen_at: new Date().toISOString() })
+        .eq('id', userId)
+        .then(noop, noop)
+    }
+
     if (profileData?.org_id) {
       const { data: orgData } = await supabase
         .from('organizations')

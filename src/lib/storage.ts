@@ -26,3 +26,12 @@ export async function signedVisitPhotoUrl(path: string, expiresIn = 3600): Promi
   const { data } = await supabase.storage.from(BUCKET).createSignedUrl(path, expiresIn)
   return data?.signedUrl ?? null
 }
+
+export function fileToDataURL(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(reader.result as string)
+    reader.onerror = () => reject(new Error('Could not read the file.'))
+    reader.readAsDataURL(file)
+  })
+}
