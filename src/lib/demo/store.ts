@@ -5,7 +5,7 @@
 
 export const DEMO = import.meta.env?.VITE_DEMO_MODE === 'true'
 
-const STORAGE_KEY = 'demo:db:v2'
+const STORAGE_KEY = 'demo:db:v3'
 const SESSION_KEY = 'demo:session:v1'
 
 export interface DemoRow {
@@ -72,7 +72,45 @@ const SKUS = [
   'Acme Cola 500ml', 'Acme Cola 1L', 'Acme Chips 50g', 'Acme Chips 150g', 'Acme Juice 200ml',
   'Acme Juice 1L', 'Acme Water 1L', 'Acme Energy 250ml', 'Acme Biscuits 100g',
 ]
-const COMPLAINT_CATS = ['Supply delay', 'Damaged stock', 'Scheme dispute', 'Planogram', 'Pricing error', 'POSM shortage']
+const COMPLAINT_ISSUES: Record<string, string[]> = {
+  'Supply delay': [
+    'Distributor missed the Tuesday delivery slot; store out of Acme Cola 1L for four days and losing walk-in sales.',
+    "Van sales rep hasn't visited in two weeks. Owner is threatening to give the shelf space to a competitor.",
+    'Order placed on the 3rd still not delivered. Retailer wants a firm ETA or a credit note for lost sales.',
+    'Partial delivery — juice and water came, chips and biscuits did not, with no communication from the distributor.',
+  ],
+  'Damaged stock': [
+    'Two cartons of Acme Juice 200ml arrived crushed and leaking. Store wants a replacement plus pickup of the damaged units.',
+    'Biscuit packs received with torn outer film — about 15 units unsellable. Retailer wants a damage claim raised.',
+    'Cola bottles delivered with swollen caps, likely a cold-chain break in transit. Owner is worried about customer complaints.',
+    'Energy drink cans dented on one side; retailer will only accept them at a discount.',
+  ],
+  'Scheme dispute': [
+    "Retailer says last month's 5% off-invoice scheme was never credited. Has the circular and expects the adjustment next bill.",
+    'Confusion over the buy-10-get-1 offer — distributor billed the full quantity. Owner wants the free units or a credit.',
+    "Q2 display incentive for keeping the end-cap hasn't been paid. Retailer has photos of the display as proof.",
+    'Trade discount applied at 2% instead of the agreed 4%. Retailer is holding payment until it is corrected.',
+  ],
+  Planogram: [
+    'Competitor took over our contracted eye-level shelf while we were out of stock. Need to reclaim it on the next visit.',
+    'Our SKUs are split across two shelves instead of blocked together — visibility is poor and off-take has dropped.',
+    'Store staff moved Acme Chips to the bottom rack for a local brand. Owner is open to moving it back.',
+    'Store layout changed after a renovation; our planogram no longer matches and needs a fresh merchandising plan.',
+  ],
+  'Pricing error': [
+    'MRP sticker on Acme Cola 500ml shows the old price; store is selling below the revised MRP and losing margin.',
+    'POS is ringing up Acme Juice 1L at the 200ml price. Retailer wants the master data corrected.',
+    'Competitor running a 15% off promo on cola this week; our price looks high by comparison — flagged for review.',
+    'Shelf price and counter price differ for the same SKU and a customer complained. Needs a price audit.',
+  ],
+  'POSM shortage': [
+    'No shelf strips or wobblers for the new juice variant; the launch display looks bare.',
+    'Danglers from the last campaign are torn and faded — store wants fresh POSM before the festival season.',
+    'Promised standee for the end-cap never arrived. Owner has kept the space reserved for a week.',
+    'Price tags and shelf talkers missing for half our range after the store reorganised.',
+  ],
+}
+const COMPLAINT_CATS = Object.keys(COMPLAINT_ISSUES)
 
 function daysAgoISO(n: number): string {
   return new Date(Date.now() - n * 86_400_000).toISOString()
@@ -218,12 +256,13 @@ function seed(): DemoDB {
           }
         }
 
-        if (submitted && chance(0.18)) {
+        if (submitted && chance(0.22)) {
           const st = pick(['open', 'open', 'assigned', 'assigned', 'resolved'])
+          const cat = pick(COMPLAINT_CATS)
           complaints.push(
             row(`c-${++cc}`, {
-              org_id: 'o-acme', visit_id: vid, category: pick(COMPLAINT_CATS),
-              description: 'Reported during a routine outlet visit; needs follow-up with the distributor.',
+              org_id: 'o-acme', visit_id: vid, category: cat,
+              description: pick(COMPLAINT_ISSUES[cat]),
               status: st, assigned_to: st === 'open' ? null : mgrId,
               resolved_at: st === 'resolved' ? daysAgoISO(int(1, ago + 1)) : null,
               created_at: daysAgoISO(ago + int(0, 2)),

@@ -6,6 +6,7 @@ import { useQuery } from '@tanstack/react-query'
 import { supabase } from '../../../lib/supabaseClient'
 import { Badge } from '../../../components/primitives'
 import { shortDate, timeAgo } from '../../../lib/time'
+import { ROLE_INFO } from '../../../lib/roles'
 import type { Profile } from '../../../types/database.types'
 
 const roleTone = { admin: 'red', manager: 'blue', rep: 'slate' } as const
@@ -72,7 +73,7 @@ export function MemberProfileModal({
               <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
                 {member.full_name || 'Unnamed'}
               </h3>
-              <Badge tone={roleTone[member.role]}>{member.role}</Badge>
+              <Badge tone={roleTone[member.role]}>{ROLE_INFO[member.role].label}</Badge>
             </div>
           </div>
           <button
@@ -83,6 +84,10 @@ export function MemberProfileModal({
             <X size={18} />
           </button>
         </div>
+
+        <p className="mb-5 rounded-lg bg-slate-50 p-3 text-xs text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+          {ROLE_INFO[member.role].blurb}
+        </p>
 
         <dl className="space-y-3 text-sm">
           <Row label="Employee code" value={member.employee_code || '—'} />

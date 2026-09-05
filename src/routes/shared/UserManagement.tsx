@@ -13,6 +13,7 @@ import { useAuth } from '../../lib/auth/AuthContext'
 import { useOrgMembers } from '../../lib/queries/useOrgMembers'
 import { useInviteUser, usePendingInvites } from '../../lib/queries/useInvites'
 import { shortDate, timeAgo } from '../../lib/time'
+import { ROLE_INFO } from '../../lib/roles'
 import type { Profile, UserRole } from '../../types/database.types'
 import { MemberProfileModal } from './users/MemberProfileModal'
 import { PendingInvitesList } from './users/PendingInvitesList'
@@ -142,6 +143,7 @@ export function UserManagement({ nav }: { nav: { to: string; label: string }[] }
             <Send size={15} /> Send invite
           </Button>
         </form>
+        <p className="mt-2 text-xs text-slate-400">{ROLE_INFO[isAdmin ? role : 'rep'].blurb}</p>
         {error && <p className="mt-3 text-sm text-red-600 dark:text-red-400">{error}</p>}
         {success && <p className="mt-3 text-sm text-emerald-600 dark:text-emerald-400">{success}</p>}
       </Card>
@@ -187,6 +189,17 @@ export function UserManagement({ nav }: { nav: { to: string; label: string }[] }
         </span>
       </SectionTitle>
 
+      <dl className="mb-4 space-y-1 rounded-lg border border-slate-200 bg-slate-50/60 p-3 text-xs dark:border-slate-800 dark:bg-slate-900/40">
+        {(['admin', 'manager', 'rep'] as UserRole[]).map((r) => (
+          <div key={r} className="flex gap-2">
+            <dt className="shrink-0">
+              <Badge tone={roleTone[r]}>{ROLE_INFO[r].label}</Badge>
+            </dt>
+            <dd className="text-slate-500 dark:text-slate-400">{ROLE_INFO[r].blurb}</dd>
+          </div>
+        ))}
+      </dl>
+
       {membersLoading ? (
         <SkeletonTable rows={8} cols={6} />
       ) : (
@@ -216,7 +229,9 @@ export function UserManagement({ nav }: { nav: { to: string; label: string }[] }
                   <span className="ml-2 text-xs text-slate-400">{m.employee_code}</span>
                 </td>
                 <td className="px-3 py-2">
-                  <Badge tone={roleTone[m.role]}>{m.role}</Badge>
+                  <span title={ROLE_INFO[m.role].blurb}>
+                    <Badge tone={roleTone[m.role]}>{ROLE_INFO[m.role].label}</Badge>
+                  </span>
                 </td>
                 <td className="px-3 py-2 text-slate-500">{m.zone || '—'}</td>
                 <td className="px-3 py-2 text-slate-500">{managerName(m.manager_id) || '—'}</td>
