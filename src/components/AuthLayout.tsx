@@ -1,5 +1,4 @@
 import type { ReactNode } from 'react'
-import { Attribution } from './Attribution'
 
 export function AuthLayout({
   title,
@@ -21,7 +20,6 @@ export function AuthLayout({
           {subtitle && <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">{subtitle}</p>}
         </div>
         {children}
-        <Attribution className="mt-6" />
       </div>
     </div>
   )

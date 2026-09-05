@@ -16,6 +16,7 @@ import { Outlets } from './routes/admin/Outlets'
 import { AdminComplaints } from './routes/admin/Complaints'
 import { Branding } from './routes/admin/Branding'
 import { RequireAuth, RequireRole, RoleHomeRedirect } from './components/RequireAuth'
+import { Attribution } from './components/Attribution'
 
 function RedirectIfAuthed({ children }: { children: ReactNode }) {
   const { session, loading } = useAuth()
@@ -34,7 +35,8 @@ function CreateOrgGuard() {
 
 export default function App() {
   return (
-    <Routes>
+    <>
+      <Routes>
       <Route
         path="/login"
         element={
@@ -167,6 +169,8 @@ export default function App() {
       />
 
       <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+      </Routes>
+      <Attribution />
+    </>
   )
 }

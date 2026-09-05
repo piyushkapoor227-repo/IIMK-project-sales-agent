@@ -1,14 +1,15 @@
-// Persistent build attribution — rendered on every screen via AuthLayout / AppShell.
-// Author: Piyush Kapoor.
+// Persistent build attribution — a fixed badge pinned to the bottom-right of
+// every page. Rendered once, globally, from App. Author: Piyush Kapoor.
 
 export const BUILD_AUTHOR = 'Piyush Kapoor'
 
-export function Attribution({ className = '' }: { className?: string }) {
+export function Attribution() {
   return (
-    <footer
-      className={`mt-8 border-t border-slate-200 py-4 text-center text-xs text-slate-400 dark:border-slate-800 dark:text-slate-500 ${className}`}
+    <div
+      className="pointer-events-none fixed bottom-2 right-2 z-50 select-none rounded-md bg-white/70 px-2 py-1 text-[11px] leading-none text-slate-400 shadow-sm ring-1 ring-slate-200/70 backdrop-blur-sm dark:bg-slate-900/70 dark:text-slate-500 dark:ring-slate-700/70"
+      aria-label={`Built by ${BUILD_AUTHOR}`}
     >
       Built by <span className="font-medium text-slate-500 dark:text-slate-400">{BUILD_AUTHOR}</span>
-    </footer>
+    </div>
   )
 }

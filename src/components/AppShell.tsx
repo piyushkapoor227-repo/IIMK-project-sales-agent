@@ -1,7 +1,6 @@
 import type { ReactNode } from 'react'
 import { NavLink } from 'react-router-dom'
 import { useAuth } from '../lib/auth/AuthContext'
-import { Attribution } from './Attribution'
 import { DEMO, resetDemoStore } from '../lib/demo/store'
 
 export function AppShell({ children, nav }: { children: ReactNode; nav: { to: string; label: string }[] }) {
@@ -69,7 +68,6 @@ export function AppShell({ children, nav }: { children: ReactNode; nav: { to: st
           </p>
         )}
         {children}
-        <Attribution />
       </main>
     </div>
   )
