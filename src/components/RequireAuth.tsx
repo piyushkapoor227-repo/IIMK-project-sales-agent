@@ -22,7 +22,7 @@ export function RequireRole({ role, children }: { role: 'admin' | 'manager' | 'r
 
 export function RoleHomeRedirect() {
   const { profile } = useAuth()
-  if (profile?.role === 'admin') return <Navigate to="/admin/users" replace />
+  if (profile?.role === 'admin') return <Navigate to="/admin" replace />
   if (profile?.role === 'manager') return <Navigate to="/manager" replace />
   return <Navigate to="/rep" replace />
 }

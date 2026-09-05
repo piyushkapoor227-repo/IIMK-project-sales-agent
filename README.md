@@ -1,10 +1,12 @@
 # AI Field Sales Copilot
 
-IIMK Advanced Product Management course project (Group 12) — a mobile-first PWA where
-field sales reps capture outlet visit data (stock, pricing, competitor activity,
-merchandising photos, complaints), AI validates and structures it, and managers/admins
-get real-time dashboards. Multi-tenant: multiple companies can use the same deployment,
-each with its own branding, users, and data (fully isolated via Postgres RLS).
+**Built by Piyush Kapoor** · IIMK Advanced Product Management course project (Group 12).
+
+A mobile-first PWA where field sales reps capture outlet visit data (stock, pricing,
+competitor activity, merchandising photos, complaints), AI validates and structures it,
+and managers/admins get real-time dashboards. Multi-tenant: multiple companies can use
+the same deployment, each with its own branding, users, and data (fully isolated via
+Postgres RLS).
 
 Stack: React + Vite + TypeScript + Tailwind (PWA) · Supabase (Postgres, Auth, Storage,
 Edge Functions) · Claude (Anthropic) API for AI features.
@@ -56,10 +58,18 @@ supabase secrets set SITE_URL=https://<your-deployed-frontend-domain>
 
 `SUPABASE_URL` / `SUPABASE_ANON_KEY` / `SUPABASE_SERVICE_ROLE_KEY` are auto-injected into Edge Functions by Supabase — no need to set them manually.
 
-Once AI features land (Phase 3), you'll also run:
+For the AI features (Phase 3 — shelf photo analysis + voice-note structuring):
 ```bash
+supabase functions deploy analyze-shelf-photo
+supabase functions deploy structure-voice-note
 supabase secrets set ANTHROPIC_API_KEY=<key from console.anthropic.com>
+# optional — defaults to claude-opus-5
+supabase secrets set ANTHROPIC_MODEL=claude-sonnet-5
 ```
+
+Both AI functions **degrade gracefully**: if `ANTHROPIC_API_KEY` is not set they
+return an `ai_disabled` response and the rep capture flow keeps working with
+manual entry only.
 
 ## 6. Register the custom access token hook
 
@@ -82,8 +92,37 @@ the JWT without an extra DB round-trip.
 
 ## Build phases
 
-1. ✅ Auth (4 methods) + multi-tenant org/RLS foundation + admin invite & branding screens — this build.
-2. Rep visit capture: outlets, smart form, photo upload, voice recording (manual entry, no AI yet).
-3. AI integration: Claude vision for photo analysis, Claude for structuring voice transcripts, anomaly validation.
-4. Manager dashboard: outlet/territory/SKU rollups, escalation alerts, issue assignment workflow.
-5. Polish + deploy: PWA icons/manifest, offline draft queue, Vercel deploy, demo data.
+1. ✅ Auth (4 methods) + multi-tenant org/RLS foundation + admin invite & branding screens.
+2. ✅ Rep visit capture: outlet directory, GPS check-in, per-visit stock & pricing rows,
+   merchandising photo upload (private bucket + signed URLs), voice/notes capture with
+   browser dictation, per-visit complaint logging, submit-to-lock workflow.
+3. ✅ AI integration: Claude vision `analyze-shelf-photo` (compliance score, detected SKUs,
+   merchandising issues) and Claude `structure-voice-note` (summary, stock mentions,
+   competitor activity, complaints, action items). Both degrade gracefully.
+4. ✅ Manager / admin dashboards: weekly visit & coverage stats, SKU pricing rollups with
+   competitor price gap, recent-visit feed, complaint triage board (assign + resolve).
+   Admin also gets outlet management. Row scope enforced by RLS (manager = direct
+   reports, admin = whole org).
+5. ✅ Polish: `Built by Piyush Kapoor` attribution on every screen, author metadata,
+   `vercel.json` SPA rewrite, PWA manifest/icons, local draft persistence for
+   in-progress visit notes.
+
+### Routes
+
+| Role | Path | Screen |
+| --- | --- | --- |
+| Rep | `/rep` | Today — start a visit (pick/add outlet), today's visits |
+| Rep | `/rep/history` | All past visits |
+| Rep | `/rep/visit/:id` | Visit capture (stock, photos, voice, complaints, submit) |
+| Manager | `/manager` | Team dashboard |
+| Manager | `/manager/complaints` | Complaint triage |
+| Admin | `/admin` | Org dashboard |
+| Admin | `/admin/users` | Invite users / team list |
+| Admin | `/admin/outlets` | Outlet management |
+| Admin | `/admin/complaints` | Complaint triage |
+| Admin | `/admin/branding` | Logo upload |
+
+## Credits
+
+Designed and built by **Piyush Kapoor** for the IIMK Advanced Product Management
+course (Group 12). See `AUTHORS.md`.

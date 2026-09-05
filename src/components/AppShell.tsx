@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { NavLink } from 'react-router-dom'
 import { useAuth } from '../lib/auth/AuthContext'
+import { Attribution } from './Attribution'
 
 export function AppShell({ children, nav }: { children: ReactNode; nav: { to: string; label: string }[] }) {
   const { organization, profile, signOut } = useAuth()
@@ -53,6 +54,7 @@ export function AppShell({ children, nav }: { children: ReactNode; nav: { to: st
           </p>
         )}
         {children}
+        <Attribution />
       </main>
     </div>
   )

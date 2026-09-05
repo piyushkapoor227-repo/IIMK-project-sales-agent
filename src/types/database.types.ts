@@ -60,7 +60,16 @@ export interface Visit {
   gps_checkin_lat: number | null
   gps_checkin_lng: number | null
   notes: string | null
+  submitted_at: string | null
   created_at: string
+}
+
+export interface VisitWithOutlet extends Visit {
+  outlet: Pick<Outlet, 'id' | 'name' | 'territory'> | null
+}
+
+export interface VisitWithRep extends VisitWithOutlet {
+  rep: Pick<Profile, 'id' | 'full_name'> | null
 }
 
 export interface StockReport {
@@ -105,4 +114,28 @@ export interface VoiceNote {
   audio_transcript: string | null
   structured_data: Record<string, unknown> | null
   created_at: string
+}
+
+export interface ComplaintWithContext extends Complaint {
+  assignee: Pick<Profile, 'id' | 'full_name'> | null
+  visit: { id: string; outlet: Pick<Outlet, 'id' | 'name'> | null } | null
+}
+
+// Shape returned by the analyze-shelf-photo Edge Function (Claude vision).
+export interface ShelfAnalysis {
+  compliance_score: number | null
+  summary: string
+  detected_skus: { name: string; facings: number | null; notes?: string }[]
+  issues: string[]
+  ai_disabled?: boolean
+}
+
+// Shape returned by the structure-voice-note Edge Function (Claude).
+export interface VoiceStructuring {
+  summary: string
+  stock_mentions: { sku: string; quantity: number | null; price: number | null }[]
+  competitor_activity: string[]
+  complaints: string[]
+  action_items: string[]
+  ai_disabled?: boolean
 }
