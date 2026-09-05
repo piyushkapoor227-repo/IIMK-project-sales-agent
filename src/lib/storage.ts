@@ -2,8 +2,37 @@
 // (`<org_id>/<visit_id>/<file>`) to satisfy the storage RLS policy.
 // Author: Piyush Kapoor.
 import { supabase } from './supabaseClient'
+import { DEMO } from './demo/store'
 
 const BUCKET = 'visit-photos'
+
+// ---- organization logo -------------------------------------------------
+
+export const LOGO_MAX_BYTES = 2 * 1024 * 1024
+export const LOGO_ACCEPT = 'image/png,image/jpeg,image/svg+xml,image/webp'
+const LOGO_TYPES = ['image/png', 'image/jpeg', 'image/svg+xml', 'image/webp']
+
+/** Returns an error message, or null if the file is a valid logo. */
+export function validateLogoFile(file: File): string | null {
+  if (!LOGO_TYPES.includes(file.type)) return 'Use a PNG, JPG, SVG or WebP image.'
+  if (file.size > LOGO_MAX_BYTES) return `Image must be under ${LOGO_MAX_BYTES / 1024 / 1024} MB.`
+  return null
+}
+
+/** Stores the logo (data URL in demo, org-logos bucket otherwise) and returns
+ *  the URL to save on the organization row. */
+export async function resolveLogoUrl(orgId: string, file: File): Promise<string> {
+  if (DEMO) return fileToDataURL(file)
+
+  const ext = (file.name.split('.').pop() || 'png').toLowerCase()
+  const path = `${orgId}/logo.${ext}`
+  const { error } = await supabase.storage
+    .from('org-logos')
+    .upload(path, file, { upsert: true, cacheControl: '3600' })
+  if (error) throw error
+  const { data } = supabase.storage.from('org-logos').getPublicUrl(path)
+  return `${data.publicUrl}?t=${Date.now()}`
+}
 
 export async function uploadVisitPhoto(
   orgId: string,
