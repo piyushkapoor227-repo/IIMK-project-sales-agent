@@ -2,6 +2,32 @@
 
 :root {
   color-scheme: light dark;
+
+  /* Chart palette — validated (dataviz skill) for both modes. Text/axes use
+     ink tokens; only marks carry the series hue. */
+  --chart-grid: #e1e0d9;
+  --chart-axis: #c3c2b7;
+  --chart-ink: #52514e;
+  --chart-muted: #898781;
+  --chart-s1: #2a78d6; /* blue  — primary / "ours" */
+  --chart-s2: #eb6834; /* orange — secondary / "competitor" */
+  --chart-good: #0ca30c;
+  --chart-warning: #fab219;
+  --chart-serious: #ec835a;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --chart-grid: #2c2c2a;
+    --chart-axis: #383835;
+    --chart-ink: #c3c2b7;
+    --chart-muted: #898781;
+    --chart-s1: #3987e5;
+    --chart-s2: #d95926;
+    --chart-good: #0ca30c;
+    --chart-warning: #fab219;
+    --chart-serious: #ec835a;
+  }
 }
 
 body {
