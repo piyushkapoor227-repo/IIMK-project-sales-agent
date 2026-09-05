@@ -128,10 +128,11 @@ the JWT without an extra DB round-trip.
 | Rep | `/rep` | Today — start a visit (pick/add outlet), today's visits |
 | Rep | `/rep/history` | All past visits |
 | Rep | `/rep/visit/:id` | Visit capture (stock, photos, voice, complaints, submit) |
-| Manager | `/manager` | Team dashboard |
+| Manager | `/manager` | Team dashboard (6 tracked charts) |
+| Manager | `/manager/users` | Invite field reps to the team |
 | Manager | `/manager/complaints` | Complaint triage |
-| Admin | `/admin` | Org dashboard |
-| Admin | `/admin/users` | Invite users / team list |
+| Admin | `/admin` | Org dashboard (6 tracked charts) |
+| Admin | `/admin/users` | Invite any role / team list |
 | Admin | `/admin/outlets` | Outlet management |
 | Admin | `/admin/complaints` | Complaint triage |
 | Admin | `/admin/branding` | Logo upload |

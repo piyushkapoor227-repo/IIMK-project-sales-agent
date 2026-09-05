@@ -74,10 +74,14 @@ export async function inviteUser(email: string, role: 'admin' | 'manager' | 'rep
   if (DEMO) {
     const userId = sessionData.session!.user.id
     const { data: me } = await supabase.from('profiles').select('*').eq('id', userId).maybeSingle()
+    const myRole = (me as { role?: string } | null)?.role
+    if (myRole === 'manager' && role !== 'rep') {
+      throw new Error('Managers can only invite field reps.')
+    }
     const { error } = await supabase.from('invites').insert({
       org_id: (me as { org_id?: string } | null)?.org_id ?? 'o-acme',
       email,
-      role,
+      role: myRole === 'manager' ? 'rep' : role,
       invited_by: userId,
       status: 'pending',
       expires_at: new Date(Date.now() + 7 * 864e5).toISOString(),

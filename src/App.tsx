@@ -9,6 +9,7 @@ import { RepHome } from './routes/rep/Home'
 import { RepHistory } from './routes/rep/History'
 import { VisitCapture } from './routes/rep/VisitCapture'
 import { ManagerDashboard } from './routes/manager/Dashboard'
+import { ManagerUsers } from './routes/manager/Users'
 import { ManagerComplaints } from './routes/manager/Complaints'
 import { AdminDashboard } from './routes/admin/Dashboard'
 import { InviteUsers } from './routes/admin/InviteUsers'
@@ -102,6 +103,16 @@ export default function App() {
           <RequireAuth>
             <RequireRole role="manager">
               <ManagerDashboard />
+            </RequireRole>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/manager/users"
+        element={
+          <RequireAuth>
+            <RequireRole role="manager">
+              <ManagerUsers />
             </RequireRole>
           </RequireAuth>
         }

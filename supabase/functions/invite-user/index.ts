@@ -17,8 +17,8 @@ Deno.serve(async (req) => {
 
     const callerRole = claims.user_role
     const callerOrgId = claims.org_id
-    if (callerRole !== 'admin' || !callerOrgId) {
-      return jsonResponse({ error: 'Only org admins can invite users.' }, 403)
+    if (!['admin', 'manager'].includes(callerRole) || !callerOrgId) {
+      return jsonResponse({ error: 'Only admins and managers can invite users.' }, 403)
     }
 
     const { email, role, full_name } = await req.json()
@@ -28,6 +28,11 @@ Deno.serve(async (req) => {
     if (!['admin', 'manager', 'rep'].includes(role)) {
       return jsonResponse({ error: 'Invalid role.' }, 400)
     }
+    // Managers can only add field reps, who then report to them.
+    if (callerRole === 'manager' && role !== 'rep') {
+      return jsonResponse({ error: 'Managers can only invite field reps.' }, 403)
+    }
+    const managerId = callerRole === 'manager' ? claims.sub : null
 
     const admin = createClient(
       Deno.env.get('SUPABASE_URL')!,
@@ -49,7 +54,13 @@ Deno.serve(async (req) => {
 
     const siteUrl = Deno.env.get('SITE_URL') ?? 'http://127.0.0.1:5173'
     const { error: inviteSendError } = await admin.auth.admin.inviteUserByEmail(email, {
-      data: { org_id: callerOrgId, role, invite_id: invite.id, full_name: full_name ?? '' },
+      data: {
+        org_id: callerOrgId,
+        role,
+        invite_id: invite.id,
+        full_name: full_name ?? '',
+        manager_id: managerId,
+      },
       redirectTo: `${siteUrl}/accept-invite`,
     })
 
