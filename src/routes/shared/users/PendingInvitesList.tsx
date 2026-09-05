@@ -2,11 +2,13 @@
 // until it expires — with a resend action. Author: Piyush Kapoor.
 import { useState } from 'react'
 import { Badge, EmptyState } from '../../../components/primitives'
+import { useToast } from '../../../components/Toast'
 import { useResendInvite, type InviteWithInviter } from '../../../lib/queries/useInvites'
 import { expiryStatus, timeAgo } from '../../../lib/time'
 
 export function PendingInvitesList({ invites }: { invites: InviteWithInviter[] }) {
   const resend = useResendInvite()
+  const toast = useToast()
   const [busyId, setBusyId] = useState<string | null>(null)
 
   if (invites.length === 0) return <EmptyState>No pending invites match this filter.</EmptyState>
@@ -15,6 +17,9 @@ export function PendingInvitesList({ invites }: { invites: InviteWithInviter[] }
     setBusyId(inv.id)
     try {
       await resend.mutateAsync({ id: inv.id, email: inv.email, role: inv.role })
+      toast.success(`Invite resent to ${inv.email}.`)
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Could not resend the invite.')
     } finally {
       setBusyId(null)
     }

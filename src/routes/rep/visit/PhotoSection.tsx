@@ -4,9 +4,11 @@ import { Badge, Card, EmptyState, SectionTitle } from '../../../components/primi
 import { SignedImage } from '../../../components/SignedImage'
 import { useAddMerchPhoto, useDeleteMerchPhoto, useMerchPhotos } from '../../../lib/queries/useVisits'
 import { analyzeShelfPhoto, fileToBase64 } from '../../../lib/ai'
+import { useOnline } from '../../../lib/useOnline'
 import type { ShelfAnalysis } from '../../../types/database.types'
 
 export function PhotoSection({ visitId, readOnly }: { visitId: string; readOnly: boolean }) {
+  const online = useOnline()
   const { data: photos } = useMerchPhotos(visitId)
   const add = useAddMerchPhoto(visitId)
   const remove = useDeleteMerchPhoto(visitId)
@@ -109,10 +111,16 @@ export function PhotoSection({ visitId, readOnly }: { visitId: string; readOnly:
             variant="outline"
             className="w-auto"
             loading={busy}
+            disabled={!online}
             onClick={() => inputRef.current?.click()}
           >
             Add shelf photo
           </Button>
+          {!online && (
+            <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+              Photos need a connection — reconnect to add one. Stock, notes and complaints still work offline.
+            </p>
+          )}
           {status && <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">{status}</p>}
           {error && <p className="mt-2 text-sm text-red-600 dark:text-red-400">{error}</p>}
         </div>

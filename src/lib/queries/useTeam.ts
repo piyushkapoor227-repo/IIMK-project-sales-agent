@@ -5,11 +5,16 @@ import { useMemo } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '../supabaseClient'
 import { useAuth } from '../auth/AuthContext'
+import { useOrgMembers } from './useOrgMembers'
 import type { ComplaintWithContext, StockReport, VisitWithRep } from '../../types/database.types'
 
-function startOfWeekISO(): string {
-  return mondayOf(new Date()).toISOString().slice(0, 10)
+export interface DashboardFilters {
+  days: number | null // null = all time
+  zone: string // 'all' or a zone name
+  repId: string // 'all' or a profile id
 }
+
+export const DEFAULT_DASHBOARD_FILTERS: DashboardFilters = { days: 30, zone: 'all', repId: 'all' }
 
 function mondayOf(input: Date): Date {
   const d = new Date(input)
@@ -60,31 +65,88 @@ export interface SkuRollup {
   priceGap: number | null
 }
 
-export function useDashboard() {
+export function useDashboard(filters: DashboardFilters = DEFAULT_DASHBOARD_FILTERS) {
   const visits = useTeamVisits()
   const stock = useTeamStockReports()
   const complaints = useComplaints()
+  const members = useOrgMembers()
 
-  const weekStart = startOfWeekISO()
+  const { days, zone, repId } = filters
+
+  const repZone = useMemo(() => {
+    const map = new Map<string, string | null>()
+    for (const m of members.data ?? []) map.set(m.id, m.zone)
+    return map
+  }, [members.data])
+
+  const zones = useMemo(() => {
+    const set = new Set<string>()
+    for (const m of members.data ?? []) if (m.zone) set.add(m.zone)
+    return [...set].sort()
+  }, [members.data])
+
+  const reps = useMemo(
+    () =>
+      (members.data ?? [])
+        .filter((m) => m.role === 'rep' && (zone === 'all' || m.zone === zone))
+        .map((m) => ({ id: m.id, name: m.full_name || m.employee_code || m.id.slice(0, 6) })),
+    [members.data, zone],
+  )
+
+  const cutoff = days == null ? null : new Date(Date.now() - days * DAY_MS).toISOString().slice(0, 10)
+  const windowLabel = days == null ? 'All time' : `Last ${days} days`
+
+  const scopedVisits = useMemo(() => {
+    return (visits.data ?? []).filter((v) => {
+      if (cutoff && v.visit_date < cutoff) return false
+      if (zone !== 'all' && repZone.get(v.rep_id) !== zone) return false
+      if (repId !== 'all' && v.rep_id !== repId) return false
+      return true
+    })
+  }, [visits.data, cutoff, zone, repId, repZone])
+
+  const scopedVisitIds = useMemo(() => new Set(scopedVisits.map((v) => v.id)), [scopedVisits])
+
+  // Zone/rep scoped but NOT date-limited — for the 6-week complaint trend.
+  const zoneScopedComplaints = useMemo(() => {
+    const zoneVisitIds = new Set(
+      (visits.data ?? [])
+        .filter(
+          (v) =>
+            (zone === 'all' || repZone.get(v.rep_id) === zone) &&
+            (repId === 'all' || v.rep_id === repId),
+        )
+        .map((v) => v.id),
+    )
+    return (complaints.data ?? []).filter(
+      (c) => !c.visit_id || zoneVisitIds.has(c.visit_id) || (zone === 'all' && repId === 'all'),
+    )
+  }, [complaints.data, visits.data, zone, repId, repZone])
+
+  const scopedComplaints = useMemo(
+    () =>
+      zoneScopedComplaints.filter((c) => !cutoff || (c.created_at ?? '').slice(0, 10) >= cutoff),
+    [zoneScopedComplaints, cutoff],
+  )
+
+  const scopedStock = useMemo(
+    () => (stock.data ?? []).filter((s) => scopedVisitIds.has(s.visit_id)),
+    [stock.data, scopedVisitIds],
+  )
 
   const summary = useMemo(() => {
-    const v = visits.data ?? []
-    const thisWeek = v.filter((x) => x.visit_date >= weekStart)
-    const outletsCovered = new Set(thisWeek.map((x) => x.outlet_id)).size
-    const submitted = thisWeek.filter((x) => x.status === 'submitted').length
-    const openComplaints = (complaints.data ?? []).filter((c) => c.status !== 'resolved').length
-
+    const submitted = scopedVisits.filter((x) => x.status === 'submitted').length
     return {
-      visitsThisWeek: thisWeek.length,
-      outletsCovered,
+      visitsThisWeek: scopedVisits.length,
+      outletsCovered: new Set(scopedVisits.map((x) => x.outlet_id)).size,
       submitted,
-      drafts: thisWeek.length - submitted,
-      openComplaints,
+      drafts: scopedVisits.length - submitted,
+      openComplaints: scopedComplaints.filter((c) => c.status !== 'resolved').length,
     }
-  }, [visits.data, complaints.data, weekStart])
+  }, [scopedVisits, scopedComplaints])
 
   const skuRollups = useMemo<SkuRollup[]>(() => {
-    const rows = stock.data ?? []
+    const rows = scopedStock
     const byKey = new Map<string, StockReport[]>()
     for (const r of rows) {
       const key = r.sku.trim().toLowerCase()
@@ -112,16 +174,17 @@ export function useDashboard() {
         }
       })
       .sort((a, b) => b.samples - a.samples)
-  }, [stock.data])
+  }, [scopedStock])
 
   const charts = useMemo(() => {
-    const v = visits.data ?? []
-    const c = complaints.data ?? []
+    const v = scopedVisits
+    const c = scopedComplaints
     const today = new Date()
 
-    // Visits per day — last 14 days.
+    // Visits per day — over the selected window (capped at 30 daily bars).
+    const dayCount = Math.min(days ?? 14, 30)
     const visitsByDay: { label: string; value: number }[] = []
-    for (let i = 13; i >= 0; i--) {
+    for (let i = dayCount - 1; i >= 0; i--) {
       const day = new Date(today.getTime() - i * DAY_MS)
       const iso = day.toISOString().slice(0, 10)
       visitsByDay.push({
@@ -131,14 +194,14 @@ export function useDashboard() {
     }
 
     // Visits by rep.
-    const repCounts = new Map<string, number>()
+    const repAgg = new Map<string, { label: string; value: number; repId: string }>()
     for (const x of v) {
-      const name = x.rep?.full_name || 'Unassigned'
-      repCounts.set(name, (repCounts.get(name) ?? 0) + 1)
+      const key = x.rep_id
+      const cur = repAgg.get(key) ?? { label: x.rep?.full_name || 'Unassigned', value: 0, repId: key }
+      cur.value++
+      repAgg.set(key, cur)
     }
-    const visitsByRep = [...repCounts.entries()]
-      .map(([label, value]) => ({ label, value }))
-      .sort((a, b) => b.value - a.value)
+    const visitsByRep = [...repAgg.values()].sort((a, b) => b.value - a.value).slice(0, 12)
 
     // Outlet coverage by territory — distinct outlets visited.
     const territoryOutlets = new Map<string, Set<string>>()
@@ -159,7 +222,8 @@ export function useDashboard() {
       { label: 'Resolved', value: statusCount('resolved'), color: 'var(--chart-good)' },
     ]
 
-    // Complaints opened vs resolved — last 6 weeks.
+    // Complaints opened vs resolved — always the last 6 weeks (zone/rep scoped,
+    // but not limited by the date filter — it is its own trend window).
     const complaintsByWeek: { label: string; values: [number, number] }[] = []
     const thisMonday = mondayOf(today)
     for (let i = 5; i >= 0; i--) {
@@ -173,8 +237,8 @@ export function useDashboard() {
       complaintsByWeek.push({
         label: start.toLocaleDateString(undefined, { day: 'numeric', month: 'short' }),
         values: [
-          c.filter((x) => inRange(x.created_at)).length,
-          c.filter((x) => inRange(x.resolved_at)).length,
+          zoneScopedComplaints.filter((x) => inRange(x.created_at)).length,
+          zoneScopedComplaints.filter((x) => inRange(x.resolved_at)).length,
         ],
       })
     }
@@ -193,14 +257,17 @@ export function useDashboard() {
       complaintsByWeek,
       priceCompare,
     }
-  }, [visits.data, complaints.data, skuRollups])
+  }, [scopedVisits, scopedComplaints, zoneScopedComplaints, skuRollups, days])
 
   return {
-    isLoading: visits.isLoading || stock.isLoading || complaints.isLoading,
+    isLoading: visits.isLoading || stock.isLoading || complaints.isLoading || members.isLoading,
+    windowLabel,
     summary,
     skuRollups,
     charts,
-    recentVisits: (visits.data ?? []).slice(0, 15),
+    zones,
+    reps,
+    recentVisits: scopedVisits.slice(0, 15),
   }
 }
 

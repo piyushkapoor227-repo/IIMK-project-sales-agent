@@ -1,10 +1,23 @@
 // Rep visit capture: draft visits + their child records (stock reports,
 // merchandising photos, voice notes, complaints) and submit.
+//
+// Text operations work offline: when navigator.onLine is false the mutation is
+// pushed to the offline queue (src/lib/offline) and the matching query merges
+// queued rows back in, so the rep sees their entry immediately. flushQueue
+// replays them on reconnect. Photos are online-only.
 // Author: Piyush Kapoor.
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '../supabaseClient'
 import { useAuth } from '../auth/AuthContext'
 import { uploadVisitPhoto } from '../storage'
+import {
+  enqueue,
+  pendingComplaintRows,
+  pendingStockRows,
+  pendingVisitPatch,
+  pendingVoiceRows,
+  removeOp,
+} from '../offline/queue'
 import type { Coords } from '../geo'
 import type {
   Complaint,
@@ -18,6 +31,9 @@ import type {
 } from '../../types/database.types'
 
 const VISIT_WITH_OUTLET = '*, outlet:outlets(id, name, territory)'
+
+const offline = () => typeof navigator !== 'undefined' && !navigator.onLine
+const isQueued = (id: string) => id.startsWith('q-')
 
 export function useMyVisits() {
   const { session } = useAuth()
@@ -48,7 +64,13 @@ export function useVisit(visitId: string | undefined) {
         .eq('id', visitId!)
         .maybeSingle()
       if (error) throw error
-      return data as unknown as VisitWithOutlet | null
+      if (!data) return null
+      const patch = pendingVisitPatch(visitId!)
+      return {
+        ...(data as unknown as VisitWithOutlet),
+        ...(patch.notes !== undefined ? { notes: patch.notes } : {}),
+        ...(patch.submitted ? { status: 'submitted' as const } : {}),
+      }
     },
   })
 }
@@ -95,8 +117,13 @@ export function useCreateVisit() {
 
 export function useUpdateVisitNotes() {
   const queryClient = useQueryClient()
+  const { organization } = useAuth()
   return useMutation({
     mutationFn: async ({ visitId, notes }: { visitId: string; notes: string }) => {
+      if (offline()) {
+        enqueue({ kind: 'notes', visitId, orgId: organization?.id ?? '', payload: { notes } })
+        return
+      }
       const { error } = await supabase.from('visits').update({ notes }).eq('id', visitId)
       if (error) throw error
     },
@@ -108,8 +135,13 @@ export function useUpdateVisitNotes() {
 
 export function useSubmitVisit() {
   const queryClient = useQueryClient()
+  const { organization } = useAuth()
   return useMutation({
     mutationFn: async (visitId: string) => {
+      if (offline()) {
+        enqueue({ kind: 'submit', visitId, orgId: organization?.id ?? '', payload: {} })
+        return
+      }
       const { error } = await supabase
         .from('visits')
         .update({ status: 'submitted', submitted_at: new Date().toISOString() })
@@ -136,7 +168,7 @@ export function useStockReports(visitId: string | undefined) {
         .eq('visit_id', visitId!)
         .order('created_at', { ascending: true })
       if (error) throw error
-      return data as StockReport[]
+      return [...(data as StockReport[]), ...(pendingStockRows(visitId!) as unknown as StockReport[])]
     },
   })
 }
@@ -155,6 +187,10 @@ export function useAddStockReport(visitId: string) {
   return useMutation({
     mutationFn: async (input: NewStockReport) => {
       if (!organization) throw new Error('No organization.')
+      if (offline()) {
+        enqueue({ kind: 'stock', visitId, orgId: organization.id, payload: { ...input } })
+        return
+      }
       const { error } = await supabase.from('stock_reports').insert({
         org_id: organization.id,
         visit_id: visitId,
@@ -174,6 +210,10 @@ export function useDeleteStockReport(visitId: string) {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: async (id: string) => {
+      if (isQueued(id)) {
+        removeOp(id)
+        return
+      }
       const { error } = await supabase.from('stock_reports').delete().eq('id', id)
       if (error) throw error
     },
@@ -243,7 +283,7 @@ export function useVoiceNotes(visitId: string | undefined) {
         .eq('visit_id', visitId!)
         .order('created_at', { ascending: true })
       if (error) throw error
-      return data as VoiceNote[]
+      return [...(data as VoiceNote[]), ...(pendingVoiceRows(visitId!) as unknown as VoiceNote[])]
     },
   })
 }
@@ -260,6 +300,10 @@ export function useAddVoiceNote(visitId: string) {
       structured?: VoiceStructuring | null
     }) => {
       if (!organization) throw new Error('No organization.')
+      if (offline()) {
+        enqueue({ kind: 'voice', visitId, orgId: organization.id, payload: { transcript, structured } })
+        return
+      }
       const { error } = await supabase.from('voice_notes').insert({
         org_id: organization.id,
         visit_id: visitId,
@@ -285,7 +329,7 @@ export function useVisitComplaints(visitId: string | undefined) {
         .eq('visit_id', visitId!)
         .order('created_at', { ascending: true })
       if (error) throw error
-      return data as Complaint[]
+      return [...(data as Complaint[]), ...(pendingComplaintRows(visitId!) as unknown as Complaint[])]
     },
   })
 }
@@ -296,6 +340,10 @@ export function useAddComplaint(visitId: string) {
   return useMutation({
     mutationFn: async ({ category, description }: { category: string; description: string }) => {
       if (!organization) throw new Error('No organization.')
+      if (offline()) {
+        enqueue({ kind: 'complaint', visitId, orgId: organization.id, payload: { category, description } })
+        return
+      }
       const { error } = await supabase.from('complaints').insert({
         org_id: organization.id,
         visit_id: visitId,

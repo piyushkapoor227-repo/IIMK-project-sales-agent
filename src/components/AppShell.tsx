@@ -2,6 +2,8 @@ import type { ReactNode } from 'react'
 import { NavLink } from 'react-router-dom'
 import { useAuth } from '../lib/auth/AuthContext'
 import { DEMO, resetDemoStore } from '../lib/demo/store'
+import { useOnline } from '../lib/useOnline'
+import { useOfflineQueueCount } from '../lib/offline/flush'
 
 export interface NavItem {
   to: string
@@ -12,9 +14,21 @@ export interface NavItem {
 
 export function AppShell({ children, nav }: { children: ReactNode; nav: NavItem[] }) {
   const { organization, profile, signOut } = useAuth()
+  const online = useOnline()
+  const pending = useOfflineQueueCount()
 
   return (
     <div className="min-h-svh bg-slate-50 dark:bg-slate-950">
+      {!online && (
+        <div className="bg-slate-800 px-4 py-1.5 text-center text-xs font-medium text-white">
+          You&apos;re offline — visit entries are saved on this device and will sync when you reconnect.
+        </div>
+      )}
+      {online && pending > 0 && (
+        <div className="bg-blue-600 px-4 py-1.5 text-center text-xs font-medium text-white">
+          Syncing {pending} offline change{pending === 1 ? '' : 's'}…
+        </div>
+      )}
       {DEMO && (
         <div className="flex items-center justify-between gap-2 bg-amber-500 px-4 py-1.5 text-xs font-medium text-amber-950">
           <span>Demo mode — data is local to this browser and not saved anywhere.</span>

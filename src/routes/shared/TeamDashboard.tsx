@@ -1,6 +1,10 @@
 // Shared rollup dashboard for managers (direct reports) and admins (whole org).
-// Row scope is enforced by RLS, not here. Author: Piyush Kapoor.
-import { AppShell } from '../../components/AppShell'
+// A single filter row (date range / zone / rep) re-scopes every chart; bars and
+// donut segments drill down. Row scope is enforced by RLS, not here.
+// Author: Piyush Kapoor.
+import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { AppShell, type NavItem } from '../../components/AppShell'
 import { Badge, EmptyState, SectionTitle, Spinner, Stat } from '../../components/primitives'
 import { ChartCard } from '../../components/ChartCard'
 import {
@@ -9,15 +13,79 @@ import {
   GroupedColumnChart,
   HBarChart,
   PriceCompareChart,
+  type Datum,
 } from '../../components/charts'
-import { useDashboard } from '../../lib/queries/useTeam'
+import { DEFAULT_DASHBOARD_FILTERS, useDashboard, type DashboardFilters } from '../../lib/queries/useTeam'
 
-export function TeamDashboard({ nav }: { nav: { to: string; label: string }[] }) {
-  const { isLoading, summary, charts, recentVisits } = useDashboard()
+const RANGES: { label: string; days: number | null }[] = [
+  { label: '7d', days: 7 },
+  { label: '30d', days: 30 },
+  { label: '90d', days: 90 },
+  { label: 'All', days: null },
+]
+
+export function TeamDashboard({ nav }: { nav: NavItem[] }) {
+  const navigate = useNavigate()
+  const [filters, setFilters] = useState<DashboardFilters>(DEFAULT_DASHBOARD_FILTERS)
+  const { isLoading, windowLabel, summary, charts, recentVisits, zones, reps } = useDashboard(filters)
+
+  const complaintsPath = nav.find((n) => n.label === 'Complaints')?.to ?? `${nav[0].to}/complaints`
+  const set = (patch: Partial<DashboardFilters>) => setFilters((f) => ({ ...f, ...patch }))
 
   return (
     <AppShell nav={nav}>
-      <SectionTitle>This week</SectionTitle>
+      {/* filter row */}
+      <div className="mb-5 flex flex-wrap items-center gap-2">
+        <div className="flex rounded-lg bg-slate-100 p-0.5 text-xs dark:bg-slate-800">
+          {RANGES.map((r) => (
+            <button
+              key={r.label}
+              onClick={() => set({ days: r.days })}
+              className={`rounded-md px-2.5 py-1 font-medium ${
+                filters.days === r.days
+                  ? 'bg-white shadow-sm dark:bg-slate-700 dark:text-white'
+                  : 'text-slate-500'
+              }`}
+            >
+              {r.label}
+            </button>
+          ))}
+        </div>
+        <select
+          value={filters.zone}
+          onChange={(e) => set({ zone: e.target.value, repId: 'all' })}
+          className="rounded-lg border border-slate-300 px-2 py-1.5 text-xs dark:border-slate-600 dark:bg-slate-800 dark:text-white"
+        >
+          <option value="all">All zones</option>
+          {zones.map((z) => (
+            <option key={z} value={z}>
+              {z}
+            </option>
+          ))}
+        </select>
+        <select
+          value={filters.repId}
+          onChange={(e) => set({ repId: e.target.value })}
+          className="rounded-lg border border-slate-300 px-2 py-1.5 text-xs dark:border-slate-600 dark:bg-slate-800 dark:text-white"
+        >
+          <option value="all">All reps</option>
+          {reps.map((r) => (
+            <option key={r.id} value={r.id}>
+              {r.name}
+            </option>
+          ))}
+        </select>
+        {(filters.zone !== 'all' || filters.repId !== 'all' || filters.days !== 30) && (
+          <button
+            onClick={() => setFilters(DEFAULT_DASHBOARD_FILTERS)}
+            className="text-xs font-medium text-slate-400 underline hover:text-slate-600"
+          >
+            Reset
+          </button>
+        )}
+      </div>
+
+      <SectionTitle>{windowLabel}</SectionTitle>
 
       {isLoading ? (
         <Spinner />
@@ -33,35 +101,36 @@ export function TeamDashboard({ nav }: { nav: { to: string; label: string }[] })
           <SectionTitle>Trends</SectionTitle>
           <p className="mb-3 -mt-1 text-xs text-slate-400">
             Tap the <span className="font-semibold">ⓘ</span> on any chart for what it measures and the
-            underlying numbers.
+            underlying numbers. Click a rep bar or a complaint slice to drill in.
           </p>
 
           <div className="grid gap-4 md:grid-cols-2">
             <ChartCard
-              title="Visits — last 14 days"
-              description="Number of outlet visits checked in each day over the last two weeks, across everyone in scope. Use it to spot coverage gaps and week-on-week rhythm."
-              table={{
-                columns: ['Day', 'Visits'],
-                rows: charts.visitsByDay.map((d) => [d.label, d.value]),
-              }}
+              title={`Visits — ${windowLabel.toLowerCase()}`}
+              description="Outlet visits checked in per day over the selected window, for the current zone/rep scope. Spot coverage gaps and rhythm."
+              table={{ columns: ['Day', 'Visits'], rows: charts.visitsByDay.map((d) => [d.label, d.value]) }}
             >
               <ColumnChart data={charts.visitsByDay} unit="visits" />
             </ChartCard>
 
             <ChartCard
               title="Visits by rep"
-              description="Total visits recorded per rep (all dates in the current data window, newest 200 visits). A quick read on workload balance and who is in the field."
-              table={{
-                columns: ['Rep', 'Visits'],
-                rows: charts.visitsByRep.map((d) => [d.label, d.value]),
-              }}
+              description="Total visits per rep in scope (top 12). Click a bar to filter the whole dashboard to that rep."
+              table={{ columns: ['Rep', 'Visits'], rows: charts.visitsByRep.map((d) => [d.label, d.value]) }}
             >
-              <HBarChart data={charts.visitsByRep} unit="visits" />
+              <HBarChart
+                data={charts.visitsByRep}
+                unit="visits"
+                onSelect={(d: Datum) => {
+                  const repId = (d as Datum & { repId?: string }).repId
+                  if (repId) set({ repId })
+                }}
+              />
             </ChartCard>
 
             <ChartCard
               title="Coverage by territory"
-              description="Distinct outlets visited at least once in each territory. Rising numbers mean wider coverage; a flat low number flags a territory being under-serviced."
+              description="Distinct outlets visited at least once in each territory, in scope. A flat low number flags an under-serviced territory."
               table={{
                 columns: ['Territory', 'Outlets visited'],
                 rows: charts.coverageByTerritory.map((d) => [d.label, d.value]),
@@ -72,18 +141,21 @@ export function TeamDashboard({ nav }: { nav: { to: string; label: string }[] })
 
             <ChartCard
               title="Complaints by status"
-              description="Every complaint in scope, split by workflow state — Open (unassigned), Assigned (being worked), Resolved. The centre number is the total. Watch the Open slice."
+              description="Complaints in scope by workflow state — Open, Assigned, Resolved. Click a slice to open that list on the Complaints page."
               table={{
                 columns: ['Status', 'Count'],
                 rows: charts.complaintsByStatus.map((s) => [s.label, s.value]),
               }}
             >
-              <DonutChart segments={charts.complaintsByStatus} />
+              <DonutChart
+                segments={charts.complaintsByStatus}
+                onSelect={(label) => navigate(`${complaintsPath}?status=${label.toLowerCase()}`)}
+              />
             </ChartCard>
 
             <ChartCard
               title="Complaints: opened vs resolved"
-              description="Per week for the last six weeks — new complaints logged (by created date) against complaints marked resolved (by resolved date). Resolved bars taller than opened means the backlog is shrinking."
+              description="Per week for the last six weeks (zone/rep scoped, not limited by the date filter). Resolved bars taller than opened means the backlog is shrinking."
               table={{
                 columns: ['Week of', 'Opened', 'Resolved'],
                 rows: charts.complaintsByWeek.map((w) => [w.label, w.values[0], w.values[1]]),
@@ -94,7 +166,7 @@ export function TeamDashboard({ nav }: { nav: { to: string; label: string }[] })
 
             <ChartCard
               title="Price vs competitor"
-              description="Average shelf price we recorded against the average competitor price, for the SKUs with the most price checks. Our bar longer than the competitor's means we're priced above them on that SKU."
+              description="Average recorded shelf price vs average competitor price, for the most-checked SKUs in scope. Our bar longer means we're priced above them."
               table={{
                 columns: ['SKU', 'Ours', 'Competitor'],
                 rows: charts.priceCompare.map((r) => [
@@ -112,7 +184,7 @@ export function TeamDashboard({ nav }: { nav: { to: string; label: string }[] })
             <SectionTitle>Recent visits</SectionTitle>
           </div>
           {recentVisits.length === 0 ? (
-            <EmptyState>No visits recorded yet.</EmptyState>
+            <EmptyState>No visits in this view.</EmptyState>
           ) : (
             <ul className="space-y-2">
               {recentVisits.map((v) => (

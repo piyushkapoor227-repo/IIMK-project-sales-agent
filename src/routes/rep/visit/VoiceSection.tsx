@@ -62,6 +62,9 @@ export function VoiceSection({ visitId, readOnly }: { visitId: string; readOnly:
             const s = n.structured_data as unknown as VoiceStructuring | null
             return (
               <Card key={n.id}>
+                {(n as { _pending?: boolean })._pending && (
+                  <p className="mb-1 text-[10px] text-amber-600 dark:text-amber-400">pending sync</p>
+                )}
                 <p className="text-sm text-slate-700 dark:text-slate-200">{n.audio_transcript}</p>
                 {s?.summary && (
                   <p className="mt-2 text-xs font-medium text-slate-500 dark:text-slate-400">AI: {s.summary}</p>

@@ -94,10 +94,12 @@ export function HBarChart({
   data,
   unit = '',
   labelWidth = 96,
+  onSelect,
 }: {
   data: Datum[]
   unit?: string
   labelWidth?: number
+  onSelect?: (d: Datum, index: number) => void
 }) {
   const { show, hide, node } = useHoverTip()
   const max = Math.max(1, ...data.map((d) => d.value))
@@ -109,7 +111,8 @@ export function HBarChart({
       {data.map((d, i) => (
         <div
           key={i}
-          className="flex cursor-default items-center gap-2 text-xs"
+          onClick={onSelect ? () => onSelect(d, i) : undefined}
+          className={`flex items-center gap-2 text-xs ${onSelect ? 'cursor-pointer rounded hover:bg-slate-50 dark:hover:bg-slate-800/60' : 'cursor-default'}`}
           onMouseEnter={(e) => show(e, `${d.label}: ${fmtNum(d.value)}${unit ? ` ${unit}` : ''}`)}
           onMouseMove={(e) => show(e, `${d.label}: ${fmtNum(d.value)}${unit ? ` ${unit}` : ''}`)}
           onMouseLeave={hide}
@@ -240,8 +243,10 @@ export function PriceCompareChart({
 
 export function DonutChart({
   segments,
+  onSelect,
 }: {
   segments: { label: string; value: number; color: string }[]
+  onSelect?: (label: string) => void
 }) {
   const { show, hide, node } = useHoverTip()
   const total = segments.reduce((s, x) => s + x.value, 0)
@@ -268,7 +273,8 @@ export function DonutChart({
               strokeWidth={18}
               strokeDasharray={`${Math.max(dash - 2, 0)} ${c - Math.max(dash - 2, 0)}`}
               strokeDashoffset={-offset}
-              className="cursor-default"
+              className={onSelect ? 'cursor-pointer' : 'cursor-default'}
+              onClick={onSelect ? () => onSelect(seg.label) : undefined}
               onMouseEnter={(e) => show(e, `${seg.label}: ${seg.value} (${Math.round(frac * 100)}%)`)}
               onMouseMove={(e) => show(e, `${seg.label}: ${seg.value} (${Math.round(frac * 100)}%)`)}
               onMouseLeave={hide}
@@ -290,7 +296,13 @@ export function DonutChart({
       </svg>
       <ul className="space-y-1.5 text-xs">
         {segments.map((seg, i) => (
-          <li key={i} className="flex items-center gap-2 text-[color:var(--chart-ink)]">
+          <li
+            key={i}
+            onClick={onSelect ? () => onSelect(seg.label) : undefined}
+            className={`flex items-center gap-2 text-[color:var(--chart-ink)] ${
+              onSelect ? 'cursor-pointer rounded hover:underline' : ''
+            }`}
+          >
             <span className="inline-block h-2.5 w-2.5 rounded-sm" style={{ background: seg.color }} />
             {seg.label}
             <span className="tabular-nums text-[color:var(--chart-muted)]">{seg.value}</span>

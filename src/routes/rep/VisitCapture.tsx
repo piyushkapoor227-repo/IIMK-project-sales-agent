@@ -4,6 +4,8 @@ import { AppShell } from '../../components/AppShell'
 import { Button } from '../../components/Button'
 import { Badge, Card, Spinner, TextArea } from '../../components/primitives'
 import { useSubmitVisit, useUpdateVisitNotes, useVisit } from '../../lib/queries/useVisits'
+import { useToast } from '../../components/Toast'
+import { useOnline } from '../../lib/useOnline'
 import { StockSection } from './visit/StockSection'
 import { PhotoSection } from './visit/PhotoSection'
 import { VoiceSection } from './visit/VoiceSection'
@@ -19,6 +21,8 @@ export function VisitCapture() {
   const { data: visit, isLoading } = useVisit(visitId)
   const saveNotes = useUpdateVisitNotes()
   const submit = useSubmitVisit()
+  const toast = useToast()
+  const online = useOnline()
 
   const [notes, setNotes] = useState('')
   const [notesLoaded, setNotesLoaded] = useState(false)
@@ -95,6 +99,7 @@ export function VisitCapture() {
       } catch {
         /* ignore */
       }
+      toast.success(online ? 'Visit submitted.' : 'Visit will be submitted when you reconnect.')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not submit the visit.')
     }

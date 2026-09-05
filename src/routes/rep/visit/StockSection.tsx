@@ -52,7 +52,14 @@ export function StockSection({ visitId, readOnly }: { visitId: string; readOnly:
             <tbody>
               {rows.map((r) => (
                 <tr key={r.id} className="border-t border-slate-200 dark:border-slate-800">
-                  <td className="py-2 pr-3 font-medium text-slate-900 dark:text-white">{r.sku}</td>
+                  <td className="py-2 pr-3 font-medium text-slate-900 dark:text-white">
+                    {r.sku}
+                    {(r as { _pending?: boolean })._pending && (
+                      <span className="ml-2 text-[10px] font-normal text-amber-600 dark:text-amber-400">
+                        pending sync
+                      </span>
+                    )}
+                  </td>
                   <td className="py-2 pr-3">{r.quantity ?? '—'}</td>
                   <td className="py-2 pr-3">{r.price != null ? `₹${r.price}` : '—'}</td>
                   <td className="py-2 pr-3">{r.competitor_price != null ? `₹${r.competitor_price}` : '—'}</td>

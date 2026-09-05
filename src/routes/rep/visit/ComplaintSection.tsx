@@ -41,6 +41,9 @@ export function ComplaintSection({ visitId, readOnly }: { visitId: string; readO
                   </Badge>
                 </div>
                 <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">{c.description}</p>
+                {(c as { _pending?: boolean })._pending && (
+                  <p className="mt-1 text-[10px] text-amber-600 dark:text-amber-400">pending sync</p>
+                )}
               </Card>
             </li>
           ))}
