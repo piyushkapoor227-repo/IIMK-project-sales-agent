@@ -14,7 +14,21 @@ Edge Functions) · Claude (Anthropic) API for AI features.
 See `.claude/plans` (or ask Claude) for the full architecture writeup. This README covers
 day-to-day setup.
 
-## 1. Local frontend setup
+## 0. Quick offline demo (no backend)
+
+```bash
+npm install
+echo "VITE_DEMO_MODE=true" > .env.local
+npm run dev
+```
+
+Open http://localhost:5173 and sign in with **admin / admin** (also **manager / manager**
+and **rep / rep**). Everything runs against an in-browser mock with seeded data —
+outlets, visits, stock, complaints, canned AI output. Data is stored in
+`localStorage` for that browser only; the amber bar has a "Reset demo data" button.
+Turn the demo off by removing `VITE_DEMO_MODE` (or setting it to `false`).
+
+## 1. Local frontend setup (real backend)
 
 ```bash
 npm install

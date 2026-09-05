@@ -9,6 +9,7 @@ import {
   signInWithGoogle,
   signInWithLinkedIn,
 } from '../../lib/auth/authActions'
+import { DEMO } from '../../lib/demo/store'
 
 type Mode = 'email' | 'company'
 
@@ -63,15 +64,23 @@ export function Login() {
         </button>
       </div>
 
+      {DEMO && (
+        <p className="mb-4 rounded-lg bg-amber-100 px-3 py-2 text-xs text-amber-800 dark:bg-amber-900/40 dark:text-amber-200">
+          Demo mode — sign in with <strong>admin / admin</strong>, <strong>manager / manager</strong>,
+          or <strong>rep / rep</strong>. On the Company login tab, any company code works.
+        </p>
+      )}
+
       <form onSubmit={handleSubmit} className="space-y-3">
         {mode === 'email' ? (
           <FormField
-            label="Email"
+            label={DEMO ? 'Username' : 'Email'}
             id="email"
-            type="email"
+            type={DEMO ? 'text' : 'email'}
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
+            placeholder={DEMO ? 'admin' : undefined}
           />
         ) : (
           <>
@@ -81,7 +90,7 @@ export function Login() {
               required
               value={orgCode}
               onChange={(e) => setOrgCode(e.target.value)}
-              placeholder="e.g. ACME"
+              placeholder={DEMO ? 'any value, e.g. ACME' : 'e.g. ACME'}
             />
             <FormField
               label="Employee code"

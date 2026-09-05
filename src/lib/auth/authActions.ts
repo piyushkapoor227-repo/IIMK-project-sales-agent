@@ -1,4 +1,5 @@
 import { supabase, functionsUrl } from '../supabaseClient'
+import { DEMO } from '../demo/store'
 
 export async function signUpWithEmail(email: string, password: string, fullName: string) {
   const { error } = await supabase.auth.signUp({
@@ -31,6 +32,16 @@ export async function signInWithLinkedIn() {
 }
 
 export async function signInWithEmployeeCode(orgCode: string, employeeCode: string, password: string) {
+  if (DEMO) {
+    // orgCode is ignored in demo — employee code + password identify the user.
+    const { error } = await supabase.auth.signInWithPassword({
+      email: `${employeeCode}@demo.local`,
+      password,
+    })
+    if (error) throw new Error(error.message)
+    return
+  }
+
   const res = await fetch(`${functionsUrl}/employee-login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -59,6 +70,23 @@ export async function inviteUser(email: string, role: 'admin' | 'manager' | 'rep
   const { data: sessionData } = await supabase.auth.getSession()
   const token = sessionData.session?.access_token
   if (!token) throw new Error('Not authenticated.')
+
+  if (DEMO) {
+    const userId = sessionData.session!.user.id
+    const { data: me } = await supabase.from('profiles').select('*').eq('id', userId).maybeSingle()
+    const { error } = await supabase.from('invites').insert({
+      org_id: (me as { org_id?: string } | null)?.org_id ?? 'o-acme',
+      email,
+      role,
+      invited_by: userId,
+      status: 'pending',
+      expires_at: new Date(Date.now() + 7 * 864e5).toISOString(),
+      accepted_at: null,
+      accepted_user_id: null,
+    })
+    if (error) throw new Error(error.message)
+    return { success: true, demo: true, full_name: fullName ?? '' }
+  }
 
   const res = await fetch(`${functionsUrl}/invite-user`, {
     method: 'POST',

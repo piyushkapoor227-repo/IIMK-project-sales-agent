@@ -2,12 +2,27 @@ import type { ReactNode } from 'react'
 import { NavLink } from 'react-router-dom'
 import { useAuth } from '../lib/auth/AuthContext'
 import { Attribution } from './Attribution'
+import { DEMO, resetDemoStore } from '../lib/demo/store'
 
 export function AppShell({ children, nav }: { children: ReactNode; nav: { to: string; label: string }[] }) {
   const { organization, profile, signOut } = useAuth()
 
   return (
     <div className="min-h-svh bg-slate-50 dark:bg-slate-950">
+      {DEMO && (
+        <div className="flex items-center justify-between gap-2 bg-amber-500 px-4 py-1.5 text-xs font-medium text-amber-950">
+          <span>Demo mode — data is local to this browser and not saved anywhere.</span>
+          <button
+            onClick={() => {
+              resetDemoStore()
+              window.location.reload()
+            }}
+            className="rounded bg-amber-950/10 px-2 py-0.5 hover:bg-amber-950/20"
+          >
+            Reset demo data
+          </button>
+        </div>
+      )}
       <header className="flex items-center justify-between border-b border-slate-200 bg-white px-4 py-3 dark:border-slate-800 dark:bg-slate-900">
         <div className="flex items-center gap-2">
           {organization?.logo_url ? (
