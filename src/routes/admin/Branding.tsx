@@ -1,6 +1,7 @@
 // Organization branding — logo (drag & drop or pick) + display name + join code,
 // with a live header preview. Author: Piyush Kapoor.
 import { useEffect, useRef, useState, type DragEvent, type FormEvent } from 'react'
+import { Copy, Trash2, Upload } from 'lucide-react'
 import { AppShell } from '../../components/AppShell'
 import { Button } from '../../components/Button'
 import { FormField } from '../../components/FormField'
@@ -140,7 +141,7 @@ export function Branding() {
                 loading={uploading}
                 onClick={() => fileRef.current?.click()}
               >
-                {logoUrl ? 'Replace logo' : 'Upload logo'}
+                <Upload size={15} /> {logoUrl ? 'Replace logo' : 'Upload logo'}
               </Button>
               {logoUrl && (
                 <Button
@@ -150,7 +151,7 @@ export function Branding() {
                   loading={update.isPending && !uploading}
                   onClick={removeLogo}
                 >
-                  Remove
+                  <Trash2 size={15} /> Remove
                 </Button>
               )}
             </div>
@@ -187,9 +188,9 @@ export function Branding() {
                 navigator.clipboard?.writeText(organization?.org_code ?? '')
                 toast.success('Code copied.')
               }}
-              className="text-xs font-medium text-slate-500 underline hover:text-slate-800 dark:hover:text-slate-200"
+              className="inline-flex items-center gap-1 text-xs font-medium text-accent-600 hover:underline dark:text-accent-400"
             >
-              Copy
+              <Copy size={12} /> Copy
             </button>
           </div>
           <p className="mt-1 text-xs text-slate-400">

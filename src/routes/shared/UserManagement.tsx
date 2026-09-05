@@ -2,11 +2,13 @@
 // (/manager/users). Admins can invite any role; managers can invite field reps
 // (who are then attached to that manager). Author: Piyush Kapoor.
 import { useMemo, useState, type FormEvent, type ReactNode } from 'react'
+import { Send } from 'lucide-react'
 import { AppShell } from '../../components/AppShell'
 import { FormField } from '../../components/FormField'
 import { Button } from '../../components/Button'
 import { Badge, Card, SectionTitle } from '../../components/primitives'
 import { Pagination, usePagination } from '../../components/Pagination'
+import { SkeletonTable } from '../../components/Skeleton'
 import { useAuth } from '../../lib/auth/AuthContext'
 import { useOrgMembers } from '../../lib/queries/useOrgMembers'
 import { useInviteUser, usePendingInvites } from '../../lib/queries/useInvites'
@@ -32,8 +34,8 @@ export function UserManagement({ nav }: { nav: { to: string; label: string }[] }
   const [managerFilter, setManagerFilter] = useState('all')
   const [selected, setSelected] = useState<Profile | null>(null)
 
-  const { data: members } = useOrgMembers()
-  const { data: invites } = usePendingInvites()
+  const { data: members, isLoading: membersLoading } = useOrgMembers()
+  const { data: invites, isLoading: invitesLoading } = usePendingInvites()
   const inviteMutation = useInviteUser()
 
   const managers = useMemo(
@@ -137,7 +139,7 @@ export function UserManagement({ nav }: { nav: { to: string; label: string }[] }
             </select>
           </div>
           <Button type="submit" className="sm:w-auto" loading={inviteMutation.isPending}>
-            Send invite
+            <Send size={15} /> Send invite
           </Button>
         </form>
         {error && <p className="mt-3 text-sm text-red-600 dark:text-red-400">{error}</p>}
@@ -185,7 +187,10 @@ export function UserManagement({ nav }: { nav: { to: string; label: string }[] }
         </span>
       </SectionTitle>
 
-      <div className="mb-8 overflow-x-auto rounded-lg border border-slate-200 dark:border-slate-800">
+      {membersLoading ? (
+        <SkeletonTable rows={8} cols={6} />
+      ) : (
+      <div className="overflow-x-auto rounded-lg border border-slate-200 dark:border-slate-800">
         <table className="w-full min-w-[640px] text-left text-sm">
           <thead>
             <tr className="border-b border-slate-200 text-[11px] uppercase tracking-wide text-slate-400 dark:border-slate-800">
@@ -229,6 +234,7 @@ export function UserManagement({ nav }: { nav: { to: string; label: string }[] }
           </tbody>
         </table>
       </div>
+      )}
       <div className="mb-8">
         <Pagination total={filteredMembers.length} pager={membersPager} label="members" />
       </div>
@@ -237,8 +243,14 @@ export function UserManagement({ nav }: { nav: { to: string; label: string }[] }
         Pending invites
         <span className="ml-2 text-sm font-normal text-slate-400">{filteredInvites.length}</span>
       </SectionTitle>
-      <PendingInvitesList invites={shownInvites} />
-      <Pagination total={filteredInvites.length} pager={invitesPager} label="invites" />
+      {invitesLoading ? (
+        <SkeletonTable rows={4} cols={6} />
+      ) : (
+        <>
+          <PendingInvitesList invites={shownInvites} />
+          <Pagination total={filteredInvites.length} pager={invitesPager} label="invites" />
+        </>
+      )}
 
       {selected && (
         <MemberProfileModal

@@ -7,6 +7,20 @@
     <meta name="author" content="Piyush Kapoor" />
     <meta name="description" content="AI Field Sales Copilot — IIMK Advanced Product Management course project (Group 12). Built by Piyush Kapoor." />
     <title>AI Field Sales Copilot — built by Piyush Kapoor</title>
+    <script>
+      // Set the theme before first paint to avoid a flash.
+      (function () {
+        try {
+          var t = localStorage.getItem('theme') || 'system'
+          var dark =
+            t === 'dark' ||
+            (t === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)
+          document.documentElement.dataset.theme = dark ? 'dark' : 'light'
+        } catch (e) {
+          document.documentElement.dataset.theme = 'light'
+        }
+      })()
+    </script>
   </head>
   <body>
     <div id="root"></div>

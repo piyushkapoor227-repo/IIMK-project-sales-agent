@@ -1,7 +1,23 @@
 @import "tailwindcss";
 
+/* Manual theme: src/lib/theme.ts always resolves the choice (system/light/dark)
+   to a concrete data-theme attribute on <html>, so the dark variant only tests
+   for "dark". */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+/* Brand accent — used for primary actions, links, active nav and focus rings. */
+@theme {
+  --color-accent-50: #eff6ff;
+  --color-accent-100: #dbeafe;
+  --color-accent-200: #bfdbfe;
+  --color-accent-400: #60a5fa;
+  --color-accent-500: #3b82f6;
+  --color-accent-600: #2563eb;
+  --color-accent-700: #1d4ed8;
+}
+
 :root {
-  color-scheme: light dark;
+  color-scheme: light;
 
   /* Chart palette — validated (dataviz skill) for both modes. Text/axes use
      ink tokens; only marks carry the series hue. */
@@ -16,25 +32,43 @@
   --chart-serious: #ec835a;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --chart-grid: #2c2c2a;
-    --chart-axis: #383835;
-    --chart-ink: #c3c2b7;
-    --chart-muted: #898781;
-    --chart-s1: #3987e5;
-    --chart-s2: #d95926;
-    --chart-good: #0ca30c;
-    --chart-warning: #fab219;
-    --chart-serious: #ec835a;
-  }
+[data-theme="dark"] {
+  color-scheme: dark;
+  --chart-grid: #2c2c2a;
+  --chart-axis: #383835;
+  --chart-ink: #c3c2b7;
+  --chart-muted: #898781;
+  --chart-s1: #3987e5;
+  --chart-s2: #d95926;
 }
 
 body {
   margin: 0;
   min-height: 100svh;
+  background: #f8fafc; /* slate-50 — prevents a flash before the app paints */
+}
+[data-theme="dark"] body {
+  background: #020617; /* slate-950 */
 }
 
 #root {
   min-height: 100svh;
+}
+
+/* Consistent keyboard focus ring across interactive elements. */
+:where(a, button, select, textarea, input, summary, [role="button"], [role="radio"], [tabindex]):focus-visible {
+  outline: 2px solid var(--color-accent-500);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
 }

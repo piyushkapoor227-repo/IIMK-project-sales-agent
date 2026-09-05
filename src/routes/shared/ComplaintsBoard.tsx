@@ -4,7 +4,8 @@
 import { useMemo } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { AppShell } from '../../components/AppShell'
-import { Badge, Card, EmptyState, SectionTitle, Spinner } from '../../components/primitives'
+import { Badge, Card, EmptyState, SectionTitle } from '../../components/primitives'
+import { Skeleton } from '../../components/Skeleton'
 import { useToast } from '../../components/Toast'
 import { useAssignComplaint, useComplaints, useResolveComplaint } from '../../lib/queries/useTeam'
 import { useOrgMembers } from '../../lib/queries/useOrgMembers'
@@ -45,7 +46,7 @@ export function ComplaintsBoard({ nav }: { nav: { to: string; label: string }[] 
             onClick={() => setStatus(s)}
             className={`rounded-full px-3 py-1 text-xs font-medium capitalize ${
               statusFilter === s
-                ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900'
+                ? 'bg-accent-600 text-white'
                 : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300'
             }`}
           >
@@ -55,7 +56,11 @@ export function ComplaintsBoard({ nav }: { nav: { to: string; label: string }[] 
       </div>
 
       {isLoading ? (
-        <Spinner />
+        <div className="space-y-3">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Skeleton key={i} className="h-32 w-full" />
+          ))}
+        </div>
       ) : !filtered.length ? (
         <EmptyState>No complaints in this view.</EmptyState>
       ) : (

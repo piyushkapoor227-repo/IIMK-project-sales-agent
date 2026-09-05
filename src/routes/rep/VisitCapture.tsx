@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
+import { Check } from 'lucide-react'
 import { AppShell } from '../../components/AppShell'
 import { Button } from '../../components/Button'
-import { Badge, Card, Spinner, TextArea } from '../../components/primitives'
+import { Badge, Card, TextArea } from '../../components/primitives'
+import { Skeleton } from '../../components/Skeleton'
 import { useSubmitVisit, useUpdateVisitNotes, useVisit } from '../../lib/queries/useVisits'
 import { useToast } from '../../components/Toast'
 import { useOnline } from '../../lib/useOnline'
@@ -53,7 +55,12 @@ export function VisitCapture() {
   if (isLoading) {
     return (
       <AppShell nav={repNav}>
-        <Spinner label="Loading visit…" />
+        <div className="space-y-4">
+          <Skeleton className="h-8 w-48" />
+          <Skeleton className="h-40 w-full" />
+          <Skeleton className="h-40 w-full" />
+          <Skeleton className="h-24 w-full" />
+        </div>
       </AppShell>
     )
   }
@@ -150,7 +157,7 @@ export function VisitCapture() {
 
       {!readOnly && (
         <Button loading={submit.isPending || saveNotes.isPending} onClick={handleSubmit}>
-          Submit visit
+          <Check size={16} /> Submit visit
         </Button>
       )}
     </AppShell>

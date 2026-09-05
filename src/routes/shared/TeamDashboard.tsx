@@ -5,7 +5,8 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { AppShell, type NavItem } from '../../components/AppShell'
-import { Badge, EmptyState, SectionTitle, Spinner, Stat } from '../../components/primitives'
+import { Badge, EmptyState, SectionTitle, Stat } from '../../components/primitives'
+import { SkeletonCards, SkeletonStatRow } from '../../components/Skeleton'
 import { ChartCard } from '../../components/ChartCard'
 import {
   ColumnChart,
@@ -88,7 +89,10 @@ export function TeamDashboard({ nav }: { nav: NavItem[] }) {
       <SectionTitle>{windowLabel}</SectionTitle>
 
       {isLoading ? (
-        <Spinner />
+        <div className="space-y-8">
+          <SkeletonStatRow />
+          <SkeletonCards count={4} />
+        </div>
       ) : (
         <>
           <div className="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-4">

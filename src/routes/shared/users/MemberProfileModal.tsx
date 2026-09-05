@@ -1,6 +1,7 @@
 // Slide-over profile for a team member, opened by clicking a row in the roster.
 // Author: Piyush Kapoor.
 import { useEffect } from 'react'
+import { X } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '../../../lib/supabaseClient'
 import { Badge } from '../../../components/primitives'
@@ -74,8 +75,12 @@ export function MemberProfileModal({
               <Badge tone={roleTone[member.role]}>{member.role}</Badge>
             </div>
           </div>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-700 dark:hover:text-slate-200">
-            ✕
+          <button
+            onClick={onClose}
+            aria-label="Close"
+            className="text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
+          >
+            <X size={18} />
           </button>
         </div>
 

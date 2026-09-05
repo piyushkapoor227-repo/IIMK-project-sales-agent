@@ -1,6 +1,7 @@
 // A dashboard chart tile: title + an ⓘ button that reveals a hidden description
 // and the underlying numbers (the table-view twin). Author: Piyush Kapoor.
 import { useEffect, useId, useRef, useState, type ReactNode } from 'react'
+import { Info } from 'lucide-react'
 
 export interface ChartTable {
   columns: string[]
@@ -46,13 +47,13 @@ export function ChartCard({
           aria-label={`About “${title}”`}
           aria-expanded={open}
           aria-controls={panelId}
-          className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border text-[11px] font-semibold transition-colors ${
+          className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full transition-colors ${
             open
-              ? 'border-slate-900 bg-slate-900 text-white dark:border-white dark:bg-white dark:text-slate-900'
-              : 'border-slate-300 text-slate-400 hover:border-slate-400 hover:text-slate-600 dark:border-slate-600 dark:hover:text-slate-300'
+              ? 'bg-accent-600 text-white'
+              : 'text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-300'
           }`}
         >
-          i
+          <Info size={15} />
         </button>
 
         {open && (

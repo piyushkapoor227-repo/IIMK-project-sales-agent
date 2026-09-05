@@ -33,7 +33,7 @@ export function Signup() {
         <p className="text-sm text-slate-500 dark:text-slate-400">
           Once confirmed, sign in and you'll be prompted to create your organization.
         </p>
-        <Link to="/login" className="mt-6 block text-center text-sm font-medium underline">
+        <Link to="/login" className="mt-6 block text-center text-sm font-medium text-accent-600 hover:underline dark:text-accent-400">
           Back to sign in
         </Link>
       </AuthLayout>
@@ -77,7 +77,7 @@ export function Signup() {
 
       <p className="mt-6 text-center text-sm text-slate-500 dark:text-slate-400">
         Already have an account?{' '}
-        <Link to="/login" className="font-medium text-slate-900 underline dark:text-white">
+        <Link to="/login" className="font-medium text-accent-600 hover:underline dark:text-accent-400">
           Sign in
         </Link>
       </p>

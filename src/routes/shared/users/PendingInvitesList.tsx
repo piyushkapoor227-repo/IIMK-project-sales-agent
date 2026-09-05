@@ -1,6 +1,7 @@
 // Pending-invite table: who invited whom, when it was last sent, and how long
 // until it expires — with a resend action. Author: Piyush Kapoor.
 import { useState } from 'react'
+import { RotateCw } from 'lucide-react'
 import { Badge, EmptyState } from '../../../components/primitives'
 import { useToast } from '../../../components/Toast'
 import { useResendInvite, type InviteWithInviter } from '../../../lib/queries/useInvites'
@@ -56,8 +57,9 @@ export function PendingInvitesList({ invites }: { invites: InviteWithInviter[] }
                   <button
                     onClick={() => handleResend(inv)}
                     disabled={busyId === inv.id}
-                    className="rounded-md border border-slate-300 px-2 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-50 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-800"
+                    className="inline-flex items-center gap-1 rounded-md border border-slate-300 px-2 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-50 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-800"
                   >
+                    <RotateCw size={12} className={busyId === inv.id ? 'animate-spin' : ''} />
                     {busyId === inv.id ? 'Sending…' : 'Resend'}
                   </button>
                 </td>

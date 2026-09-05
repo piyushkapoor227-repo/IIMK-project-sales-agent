@@ -1,6 +1,7 @@
 // Lightweight toast notifications. Wrap the app in <ToastProvider>, then call
 // useToast() from anywhere. Author: Piyush Kapoor.
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
+import { AlertCircle, CheckCircle2, Info } from 'lucide-react'
 
 type Tone = 'success' | 'error' | 'info'
 interface Toast {
@@ -22,6 +23,8 @@ const toneClasses: Record<Tone, string> = {
   error: 'border-red-200 bg-red-50 text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-200',
   info: 'border-slate-200 bg-white text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200',
 }
+
+const toneIcon = { success: CheckCircle2, error: AlertCircle, info: Info }
 
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([])
@@ -45,7 +48,10 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   return (
     <ToastContext.Provider value={api}>
       {children}
-      <div className="pointer-events-none fixed inset-x-0 bottom-4 z-[60] flex flex-col items-center gap-2 px-4">
+      <div
+        aria-live="polite"
+        className="pointer-events-none fixed inset-x-0 bottom-4 z-[60] flex flex-col items-center gap-2 px-4"
+      >
         {toasts.map((t) => (
           <ToastItem key={t.id} toast={t} onDone={() => remove(t.id)} />
         ))}
@@ -60,13 +66,15 @@ function ToastItem({ toast, onDone }: { toast: Toast; onDone: () => void }) {
     return () => clearTimeout(timer)
   }, [onDone])
 
+  const Icon = toneIcon[toast.tone]
   return (
     <div
       role="status"
       onClick={onDone}
-      className={`pointer-events-auto w-full max-w-sm cursor-pointer rounded-lg border px-4 py-2.5 text-sm shadow-lg ${toneClasses[toast.tone]}`}
+      className={`pointer-events-auto flex w-full max-w-sm cursor-pointer items-start gap-2 rounded-lg border px-4 py-2.5 text-sm shadow-lg ${toneClasses[toast.tone]}`}
     >
-      {toast.message}
+      <Icon size={16} className="mt-0.5 shrink-0" />
+      <span>{toast.message}</span>
     </div>
   )
 }

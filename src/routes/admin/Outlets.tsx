@@ -1,8 +1,10 @@
 import { useState, type FormEvent } from 'react'
+import { Plus } from 'lucide-react'
 import { AppShell } from '../../components/AppShell'
 import { Button } from '../../components/Button'
 import { FormField } from '../../components/FormField'
-import { Card, EmptyState, SectionTitle, Spinner } from '../../components/primitives'
+import { Card, EmptyState, SectionTitle } from '../../components/primitives'
+import { SkeletonTable } from '../../components/Skeleton'
 import { useCreateOutlet, useOutlets } from '../../lib/queries/useOutlets'
 import { adminNav } from './nav'
 
@@ -59,14 +61,14 @@ export function Outlets() {
             onChange={(e) => setForm((s) => ({ ...s, address: e.target.value }))}
           />
           <Button type="submit" className="sm:w-auto" loading={create.isPending}>
-            Add outlet
+            <Plus size={16} /> Add outlet
           </Button>
         </form>
         {error && <p className="mt-2 text-sm text-red-600 dark:text-red-400">{error}</p>}
       </Card>
 
       {isLoading ? (
-        <Spinner />
+        <SkeletonTable rows={6} cols={2} />
       ) : !outlets?.length ? (
         <EmptyState>No outlets yet. Add your first one above.</EmptyState>
       ) : (

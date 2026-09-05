@@ -134,7 +134,7 @@ export function Login() {
 
       <p className="mt-6 text-center text-sm text-slate-500 dark:text-slate-400">
         New here?{' '}
-        <Link to="/signup" className="font-medium text-slate-900 underline dark:text-white">
+        <Link to="/signup" className="font-medium text-accent-600 hover:underline dark:text-accent-400">
           Create an account
         </Link>
       </p>
