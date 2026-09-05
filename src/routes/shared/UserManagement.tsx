@@ -6,6 +6,7 @@ import { AppShell } from '../../components/AppShell'
 import { FormField } from '../../components/FormField'
 import { Button } from '../../components/Button'
 import { Badge, Card, SectionTitle } from '../../components/primitives'
+import { Pagination, usePagination } from '../../components/Pagination'
 import { useAuth } from '../../lib/auth/AuthContext'
 import { useOrgMembers } from '../../lib/queries/useOrgMembers'
 import { useInviteUser, usePendingInvites } from '../../lib/queries/useInvites'
@@ -84,7 +85,11 @@ export function UserManagement({ nav }: { nav: { to: string; label: string }[] }
     }
   }
 
-  const shown = filteredMembers.slice(0, 100)
+  const filterKey = `${search}|${roleFilter}|${zoneFilter}|${managerFilter}`
+  const membersPager = usePagination(filteredMembers.length, filterKey)
+  const invitesPager = usePagination(filteredInvites.length, filterKey)
+  const shown = filteredMembers.slice(membersPager.start, membersPager.end)
+  const shownInvites = filteredInvites.slice(invitesPager.start, invitesPager.end)
 
   return (
     <AppShell nav={nav}>
@@ -224,17 +229,16 @@ export function UserManagement({ nav }: { nav: { to: string; label: string }[] }
           </tbody>
         </table>
       </div>
-      {filteredMembers.length > shown.length && (
-        <p className="-mt-6 mb-8 text-xs text-slate-400">
-          Showing the first {shown.length}. Narrow the filters to see the rest.
-        </p>
-      )}
+      <div className="mb-8">
+        <Pagination total={filteredMembers.length} pager={membersPager} label="members" />
+      </div>
 
       <SectionTitle>
         Pending invites
         <span className="ml-2 text-sm font-normal text-slate-400">{filteredInvites.length}</span>
       </SectionTitle>
-      <PendingInvitesList invites={filteredInvites} />
+      <PendingInvitesList invites={shownInvites} />
+      <Pagination total={filteredInvites.length} pager={invitesPager} label="invites" />
 
       {selected && (
         <MemberProfileModal
