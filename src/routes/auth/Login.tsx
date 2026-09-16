@@ -10,6 +10,7 @@ import {
   signInWithLinkedIn,
 } from '../../lib/auth/authActions'
 import { DEMO } from '../../lib/demo/store'
+import { GoogleIcon, LinkedInIcon } from '../../components/BrandIcons'
 
 type Mode = 'email' | 'company'
 
@@ -125,9 +126,11 @@ export function Login() {
 
       <div className="space-y-2">
         <Button variant="outline" type="button" onClick={() => signInWithGoogle()}>
+          <GoogleIcon />
           Continue with Google
         </Button>
         <Button variant="outline" type="button" onClick={() => signInWithLinkedIn()}>
+          <LinkedInIcon />
           Continue with LinkedIn
         </Button>
       </div>

@@ -4,6 +4,7 @@ import { AuthLayout } from '../../components/AuthLayout'
 import { FormField } from '../../components/FormField'
 import { Button } from '../../components/Button'
 import { signInWithGoogle, signInWithLinkedIn, signUpWithEmail } from '../../lib/auth/authActions'
+import { GoogleIcon, LinkedInIcon } from '../../components/BrandIcons'
 
 export function Signup() {
   const [fullName, setFullName] = useState('')
@@ -68,9 +69,11 @@ export function Signup() {
 
       <div className="space-y-2">
         <Button variant="outline" type="button" onClick={() => signInWithGoogle()}>
+          <GoogleIcon />
           Continue with Google
         </Button>
         <Button variant="outline" type="button" onClick={() => signInWithLinkedIn()}>
+          <LinkedInIcon />
           Continue with LinkedIn
         </Button>
       </div>
