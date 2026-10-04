@@ -39,7 +39,7 @@ export function AcceptInvite() {
   if (loading) {
     return (
       <AuthLayout title="Loading…">
-        <p className="text-sm text-slate-500">Verifying your invite…</p>
+        <p className="text-sm text-slate-500 dark:text-slate-400">Verifying your invite…</p>
       </AuthLayout>
     )
   }
@@ -47,7 +47,7 @@ export function AcceptInvite() {
   if (!session) {
     return (
       <AuthLayout title="Invite link invalid or expired">
-        <p className="text-sm text-slate-500">
+        <p className="text-sm text-slate-500 dark:text-slate-400">
           Ask your admin to resend the invite, or sign in if you already have an account.
         </p>
       </AuthLayout>

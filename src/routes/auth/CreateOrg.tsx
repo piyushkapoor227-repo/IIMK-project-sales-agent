@@ -42,7 +42,7 @@ export function CreateOrg() {
           placeholder="e.g. ACME"
           maxLength={20}
         />
-        <p className="text-xs text-slate-400">
+        <p className="text-xs text-slate-500 dark:text-slate-400">
           Your team will use this code to sign in with their employee code.
         </p>
         {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}

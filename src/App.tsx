@@ -8,8 +8,11 @@ import { CreateOrg } from './routes/auth/CreateOrg'
 import { RepHome } from './routes/rep/Home'
 import { ManagerDashboard } from './routes/manager/Dashboard'
 import { InviteUsers } from './routes/admin/InviteUsers'
+import { Outlets } from './routes/admin/Outlets'
+import { Complaints } from './routes/admin/Complaints'
 import { Branding } from './routes/admin/Branding'
-import { RequireAuth, RequireRole, RoleHomeRedirect } from './components/RequireAuth'
+import { PlatformDashboard } from './routes/platform/Dashboard'
+import { RequireAuth, RequirePlatformAdmin, RequireRole, RoleHomeRedirect } from './components/RequireAuth'
 
 function RedirectIfAuthed({ children }: { children: ReactNode }) {
   const { session, loading } = useAuth()
@@ -87,12 +90,42 @@ export default function App() {
         }
       />
       <Route
+        path="/admin/outlets"
+        element={
+          <RequireAuth>
+            <RequireRole role="admin">
+              <Outlets />
+            </RequireRole>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/admin/complaints"
+        element={
+          <RequireAuth>
+            <RequireRole role="admin">
+              <Complaints />
+            </RequireRole>
+          </RequireAuth>
+        }
+      />
+      <Route
         path="/admin/branding"
         element={
           <RequireAuth>
             <RequireRole role="admin">
               <Branding />
             </RequireRole>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/platform"
+        element={
+          <RequireAuth>
+            <RequirePlatformAdmin>
+              <PlatformDashboard />
+            </RequirePlatformAdmin>
           </RequireAuth>
         }
       />

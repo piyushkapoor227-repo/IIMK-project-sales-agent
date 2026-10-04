@@ -32,7 +32,7 @@ export function InviteUsers() {
 
   return (
     <AppShell nav={adminNav}>
-      <h2 className="mb-4 text-lg font-semibold text-slate-900 dark:text-white">Invite users</h2>
+      <h2 className="mb-4 text-xl font-semibold tracking-tight text-slate-900 dark:text-white">Invite users</h2>
 
       <form onSubmit={handleSubmit} className="mb-8 flex flex-col gap-3 sm:flex-row sm:items-end">
         <div className="flex-1">
@@ -53,7 +53,7 @@ export function InviteUsers() {
             id="invite_role"
             value={role}
             onChange={(e) => setRole(e.target.value as UserRole)}
-            className="rounded-lg border border-slate-300 px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-800 dark:text-white"
+            className="rounded-control border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand-ring dark:border-slate-600 dark:bg-slate-800 dark:text-white"
           >
             <option value="rep">Field rep</option>
             <option value="manager">Manager</option>
@@ -68,26 +68,26 @@ export function InviteUsers() {
       {error && <p className="mb-4 text-sm text-red-600 dark:text-red-400">{error}</p>}
       {success && <p className="mb-4 text-sm text-emerald-600 dark:text-emerald-400">{success}</p>}
 
-      <h3 className="mb-2 text-sm font-semibold text-slate-700 dark:text-slate-200">Pending invites</h3>
-      <ul className="mb-8 divide-y divide-slate-200 rounded-lg border border-slate-200 dark:divide-slate-800 dark:border-slate-800">
+      <h3 className="mb-2 text-base font-semibold text-slate-900 dark:text-white">Pending invites</h3>
+      <ul className="mb-8 divide-y divide-slate-200 rounded-control border border-slate-200 dark:divide-slate-800 dark:border-slate-800">
         {invites?.length ? (
           invites.map((invite) => (
             <li key={invite.id} className="flex justify-between px-4 py-2 text-sm">
               <span className="text-slate-800 dark:text-slate-200">{invite.email}</span>
-              <span className="text-slate-400">{invite.role}</span>
+              <span className="text-slate-500 dark:text-slate-400">{invite.role}</span>
             </li>
           ))
         ) : (
-          <li className="px-4 py-3 text-sm text-slate-400">No pending invites.</li>
+          <li className="px-4 py-3 text-sm text-slate-500 dark:text-slate-400">No pending invites.</li>
         )}
       </ul>
 
-      <h3 className="mb-2 text-sm font-semibold text-slate-700 dark:text-slate-200">Team members</h3>
-      <ul className="divide-y divide-slate-200 rounded-lg border border-slate-200 dark:divide-slate-800 dark:border-slate-800">
+      <h3 className="mb-2 text-base font-semibold text-slate-900 dark:text-white">Team members</h3>
+      <ul className="divide-y divide-slate-200 rounded-control border border-slate-200 dark:divide-slate-800 dark:border-slate-800">
         {members?.map((member) => (
           <li key={member.id} className="flex justify-between px-4 py-2 text-sm">
             <span className="text-slate-800 dark:text-slate-200">{member.full_name || member.id}</span>
-            <span className="text-slate-400">{member.role}</span>
+            <span className="text-slate-500 dark:text-slate-400">{member.role}</span>
           </li>
         ))}
       </ul>
