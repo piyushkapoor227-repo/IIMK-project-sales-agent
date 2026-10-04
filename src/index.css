@@ -1,7 +1,34 @@
 @import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
 
+@theme {
+  /* Brand accent -- indigo is the only hue not already claimed by slate
+     (neutral), amber (dev-mode/warning), emerald (success) or red (error). */
+  --color-brand: var(--color-indigo-600);
+  --color-brand-hover: var(--color-indigo-700);
+  --color-brand-ring: var(--color-indigo-500);
+
+  /* Deliberate 2-step radius scale, replacing ad hoc rounded/-md/-lg/-2xl use. */
+  --radius-control: var(--radius-lg);
+  --radius-panel: var(--radius-xl);
+}
+
+.dark {
+  --color-brand: var(--color-indigo-500);
+  --color-brand-hover: var(--color-indigo-400);
+  --color-brand-ring: var(--color-indigo-400);
+}
+
+/* color-scheme must track OUR theme toggle, not the raw OS preference --
+   otherwise native widgets (select dropdown popups, scrollbars) render with
+   dark-mode assumptions even while the app is explicitly set to light mode,
+   producing invisible white-on-white text in <select> option lists. */
 :root {
-  color-scheme: light dark;
+  color-scheme: light;
+}
+
+.dark {
+  color-scheme: dark;
 }
 
 body {
