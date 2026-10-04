@@ -1,7 +1,9 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
+import { createContext, useContext, useEffect, useState, useSyncExternalStore, type ReactNode } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import { supabase } from '../supabaseClient'
-import type { Organization, Profile } from '../../types/database.types'
+import type { Organization, Profile, UserRole } from '../../types/database.types'
+import { MOCK_AUTH, getMockState, mockEnterOrg, mockEnterPlatformAdmin, mockSetRole, mockSignOut, subscribeMock } from './mockAuth'
+import { getOrgs, subscribeOrgStore } from './mockOrgStore'
 
 interface AuthContextValue {
   session: Session | null
@@ -10,11 +12,45 @@ interface AuthContextValue {
   loading: boolean
   refreshProfile: () => Promise<void>
   signOut: () => Promise<void>
+  mockMode: boolean
+  setMockRole?: (role: UserRole) => void
+  isPlatformAdmin?: boolean
+  enterPlatformAdmin?: () => void
+  enterOrg?: (orgId: string, role: UserRole) => void
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined)
 
-export function AuthProvider({ children }: { children: ReactNode }) {
+function MockAuthProvider({ children }: { children: ReactNode }) {
+  const state = useSyncExternalStore(subscribeMock, getMockState)
+  const orgs = useSyncExternalStore(subscribeOrgStore, getOrgs)
+  const { profile, isPlatformAdmin } = state
+  const session =
+    profile || isPlatformAdmin ? ({ user: { id: profile?.id ?? 'mock-platform-admin' } } as unknown as Session) : null
+  const organization = profile ? (orgs.find((o) => o.id === profile.org_id) ?? null) : null
+
+  return (
+    <AuthContext.Provider
+      value={{
+        session,
+        profile,
+        organization,
+        loading: false,
+        refreshProfile: async () => {},
+        signOut: async () => mockSignOut(),
+        mockMode: true,
+        setMockRole: (role) => mockSetRole(role),
+        isPlatformAdmin,
+        enterPlatformAdmin: () => mockEnterPlatformAdmin(),
+        enterOrg: (orgId, role) => mockEnterOrg(orgId, role),
+      }}
+    >
+      {children}
+    </AuthContext.Provider>
+  )
+}
+
+function RealAuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null)
   const [profile, setProfile] = useState<Profile | null>(null)
   const [organization, setOrganization] = useState<Organization | null>(null)
@@ -78,10 +114,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ session, profile, organization, loading, refreshProfile, signOut }}>
+    <AuthContext.Provider value={{ session, profile, organization, loading, refreshProfile, signOut, mockMode: false }}>
       {children}
     </AuthContext.Provider>
   )
+}
+
+export function AuthProvider({ children }: { children: ReactNode }) {
+  return MOCK_AUTH ? <MockAuthProvider>{children}</MockAuthProvider> : <RealAuthProvider>{children}</RealAuthProvider>
 }
 
 export function useAuth() {

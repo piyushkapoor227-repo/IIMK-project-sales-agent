@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '../supabaseClient'
+import { MOCK_AUTH } from '../auth/mockAuth'
 import { inviteUser } from '../auth/authActions'
 import type { Invite, UserRole } from '../../types/database.types'
 
@@ -7,6 +8,9 @@ export function usePendingInvites() {
   return useQuery({
     queryKey: ['pending-invites'],
     queryFn: async () => {
+      if (MOCK_AUTH) {
+        return [] as Invite[]
+      }
       const { data, error } = await supabase
         .from('invites')
         .select('*')
@@ -25,6 +29,7 @@ export function useInviteUser() {
       inviteUser(email, role, fullName),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['pending-invites'] })
+      queryClient.invalidateQueries({ queryKey: ['org-members'] })
     },
   })
 }
